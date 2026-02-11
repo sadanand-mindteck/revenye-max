@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -5,27 +6,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RevenueMax MIS | Enterprise Revenue Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --antd-blue: #1677ff;
+      }
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #f8fafc;
+        background-color: #f0f2f5; /* AntD background */
         margin: 0;
         -webkit-font-smoothing: antialiased;
+        font-size: 14px;
+        color: #000000d9; /* AntD primary text */
       }
+      /* Remove all significant rounding globally */
+      * {
+        border-radius: 0 !important;
+      }
+      /* Minimal rounding for specific utility if needed, but per request 0 */
+      .rounded-sm { border-radius: 2px !important; }
+      
       ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+        width: 4px;
+        height: 4px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
+        background: #d9d9d9;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+        background: #bfbfbf;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      /* AntD Tab Simulation */
+      .ant-tabs-tab {
+        position: relative;
+        padding: 12px 16px;
+        transition: all 0.3s;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+      }
+      .ant-tabs-tab-active {
+        color: var(--antd-blue);
+        border-bottom-color: var(--antd-blue);
+        font-weight: 600;
       }
     </style>
   <script type="importmap">

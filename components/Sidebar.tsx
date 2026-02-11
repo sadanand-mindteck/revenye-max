@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NAVIGATION_ITEMS, ROLE_PERMISSIONS } from '../constants';
-import { TrendingUp, LogOut, Shield } from 'lucide-react';
+import { TrendingUp, LogOut } from 'lucide-react';
 import { User } from '../types';
 
 interface SidebarProps {
@@ -18,54 +18,49 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
   const filteredNav = NAVIGATION_ITEMS.filter(item => allowedTabs.includes(item.id));
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 h-screen transition-all duration-300 relative z-[60]">
-      <div className="h-20 flex items-center px-6 border-b border-slate-800">
-        <div className="flex items-center gap-2.5 text-white">
-          <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-500/20">
-            <TrendingUp size={20} />
-          </div>
-          <span className="font-extrabold text-xl tracking-tight">RevenueMax</span>
+    <aside className="w-56 bg-[#001529] text-[#ffffffa6] flex flex-col shrink-0 h-screen sticky top-0 z-[60]">
+      <div className="h-12 flex items-center px-4 bg-[#002140]">
+        <div className="flex items-center gap-2 text-white">
+          <TrendingUp size={14} className="text-[#1677ff]" />
+          <span className="font-bold text-sm tracking-tight">RevenueMax MIS</span>
         </div>
       </div>
 
-      <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto">
-        {filteredNav.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-semibold group ${
-              activeTab === item.id
-                ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20'
-                : 'hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <span className={`${activeTab === item.id ? 'text-white' : 'text-slate-500 group-hover:text-blue-400'} transition-colors`}>
-              {item.icon}
-            </span>
-            {item.label}
-          </button>
-        ))}
+      <nav className="flex-1 py-2 overflow-y-auto">
+        <div className="space-y-0.5">
+          {filteredNav.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 transition-all text-sm relative group ${
+                activeTab === item.id
+                  ? 'bg-[#1677ff] text-white'
+                  : 'hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span className={`${activeTab === item.id ? 'text-white' : 'text-[#ffffff73]'}`}>
+                {React.cloneElement(item.icon as React.ReactElement<any>, { size: 14 })}
+              </span>
+              {item.label}
+              {activeTab === item.id && (
+                <div className="absolute right-0 top-0 bottom-0 w-1 bg-white"></div>
+              )}
+            </button>
+          ))}
+        </div>
       </nav>
 
-      <div className="p-4 bg-slate-800/50 border-t border-slate-800">
-        <div className="flex items-center gap-3 p-2 mb-4">
-          <div className="h-10 w-10 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">
-            {user.name.split(' ').map(n => n[0]).join('')}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white truncate">{user.name}</p>
-            <div className="flex items-center gap-1">
-              <Shield size={10} className="text-blue-400" />
-              <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest truncate">{user.role}</p>
-            </div>
-          </div>
+      <div className="mt-auto bg-[#001d33] border-t border-white/10">
+        <div className="px-4 py-3">
+          <p className="text-xs font-semibold text-white truncate">{user.name}</p>
+          <p className="text-[10px] text-[#ffffff73] uppercase mt-0.5">{user.role}</p>
         </div>
         <button 
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all text-sm font-bold text-slate-400 group"
+          className="w-full flex items-center gap-2 px-4 py-3 hover:bg-white/5 transition-all text-xs border-t border-white/5"
         >
-          <LogOut size={18} className="group-hover:translate-x-0.5 transition-transform" />
-          End Session
+          <LogOut size={12} />
+          Sign Out
         </button>
       </div>
     </aside>
