@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { NAVIGATION_ITEMS, ROLE_PERMISSIONS } from '../constants';
+import { NAVIGATION_ITEMS, ROLE_PERMISSIONS } from '@/constants';
 import { TrendingUp, LogOut, Shield } from 'lucide-react';
-import { User } from '../types';
+import { User } from '@/types';
 
 interface SidebarProps {
   activeTab: string;

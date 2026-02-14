@@ -1,16 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
-import Header from './components/Header';
-import Dashboard from './components/Dashboard';
-import DealManagement from './components/DealManagement';
-import DealEntry from './components/DealEntry';
-import Analytics from './components/Analytics';
-import Regions from './components/Regions';
-import DataUpload from './components/DataUpload';
-import Login from './components/Login';
-import { User, UserRole } from './types';
-import { ROLE_PERMISSIONS } from './constants';
+import Sidebar from '@/components/Sidebar';
+import Header from '@/components/Header';
+import Dashboard from '@/components/Dashboard';
+import DealManagement from '@/components/DealManagement';
+import DealEntry from '@/components/DealEntry';
+import Analytics from '@/components/Analytics';
+import Regions from '@/components/Regions';
+import DataUpload from '@/components/DataUpload';
+import Login from '@/components/Login';
+import { User, UserRole } from '@/types';
+import { ROLE_PERMISSIONS } from '@/constants';
 import { Lock } from 'lucide-react';
 
 const App: React.FC = () => {

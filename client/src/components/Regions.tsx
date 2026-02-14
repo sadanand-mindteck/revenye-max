@@ -4,7 +4,7 @@ import {
   MapPin, Users, Globe, ChevronRight, Zap, ArrowLeft, 
   Layers, Briefcase, TrendingUp, DollarSign, Activity, ChevronLeft
 } from 'lucide-react';
-import { MOCK_DEALS } from '../constants';
+import { MOCK_DEALS } from '@/constants';
 
 type ViewLevel = 'global' | 'region' | 'bu' | 'bdm';
 

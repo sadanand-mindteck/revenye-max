@@ -4,7 +4,7 @@ import {
   ChevronDown, ChevronRight, MoreHorizontal, Filter, 
   Download, Search, Plus, ExternalLink, User, Activity
 } from 'lucide-react';
-import { MOCK_DEALS } from '../constants';
+import { MOCK_DEALS } from '@/constants';
 
 const DealManagement: React.FC = () => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());

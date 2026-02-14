@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { UserRole, User } from '../types';
+import { UserRole, User } from '@/types';
 import { TrendingUp, ShieldCheck, Lock, ChevronRight, UserCircle } from 'lucide-react';
 
 interface LoginProps {

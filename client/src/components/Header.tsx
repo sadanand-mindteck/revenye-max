@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Calendar, Search, Bell, ChevronDown, UserCircle, ShieldCheck } from 'lucide-react';
-import { FISCAL_YEARS } from '../constants';
-import { User } from '../types';
+import { FISCAL_YEARS } from '@/constants';
+import { User } from '@/types';
 
 interface HeaderProps {
   fiscalYear: string;

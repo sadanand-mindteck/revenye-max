@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { Save, Calculator, TrendingUp, PieChart, ShieldCheck, Search, Upload, FileText, Info, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
-import { User, UserRole, Deal } from '../types';
-import { MOCK_DEALS } from '../constants';
+import { User, UserRole, Deal } from '@/types';
+import { MOCK_DEALS } from '@/constants';
 
 interface DealEntryProps {
   user: User;
