@@ -23,7 +23,7 @@ declare module "fastify" {
     user: {
       id: string;
       email: string;
-      role: string;
+      roles: string;
     };
 }
 }
@@ -33,12 +33,12 @@ declare module "@fastify/jwt" {
     payload: {
       id: string;
       email: string;
-      role: string;
+      roles: string;
     };
     user: {
       id: string;
       email: string;
-      role: string;
+      roles: string;
     };
   }
 }

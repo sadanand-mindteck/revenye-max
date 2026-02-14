@@ -1,12 +1,15 @@
 import bcrypt from 'bcryptjs';
 
-export class PasswordHash {
-  static async hash(password: string) {
-    const salt = await bcrypt.genSalt(10);
-    return bcrypt.hash(password, salt);
-  }
-
-  static async compare(password: string, hashed: string) {
-    return bcrypt.compare(password, hashed);
-  }
+export async function hashPassword(password: string) {
+  return bcrypt.hash(password, 10);
 }
+
+export async function verifyPassword(password: string, hashed: string) {
+  return bcrypt.compare(password, hashed);
+}
+
+// Backwards-compatible wrapper for existing imports
+export const PasswordHash = {
+  hash: hashPassword,
+  compare: verifyPassword,
+};

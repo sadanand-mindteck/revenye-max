@@ -9,9 +9,22 @@ import fastifyJwt from "@fastify/jwt";
 
 
 import { initDatabases } from "./db";
-import healthRoutes from "./routes/health";
-import dealsRoutes from "./routes/deals";
-import authRoutes from "./routes/auth";
+import healthRoutes from "./routes/health.route";
+import authRoutes from "./routes/auth.route";
+import regionRoutes from "./routes/region.route";
+import businessTypesRoutes from "./routes/businessTypes.route";
+import classificationRoutes from "./routes/classification.route";
+import dealTypesRoutes from "./routes/dealTypes.route";
+import entitiesRoutes from "./routes/entities.route";
+import entitiesGrRoutes from "./routes/entities-gr.route";
+import horizontalsRoutes from "./routes/horizontals.route";
+import verticalsRoutes from "./routes/verticals.route";
+import customersRoutes from "./routes/customers.route";
+import resourcesRoutes from "./routes/resources.route";
+import employeesRoutes from "./routes/employees.route";
+import projectsRoutes from "./routes/projects.route";
+import rolesRoutes from "./routes/roles.route";
+import employeeRolesRoutes from "./routes/employeeRoles.route";
 import { authPlugin } from "./plugins/auth";
 import { authenticate } from "./middleware/authenticate.middleware";
 import { setupErrorHandler } from "./Error";
@@ -55,8 +68,21 @@ async function start() {
 
   // Register routes
   server.register(healthRoutes, { prefix: "/api/health" });
-  server.register(dealsRoutes, { prefix: "/api/deals" });
   server.register(authRoutes, { prefix: "/api/auth" });
+  server.register(regionRoutes, { prefix: "/api/regions" });
+  server.register(businessTypesRoutes, { prefix: "/api/business-types" });
+  server.register(classificationRoutes, { prefix: "/api/classifications" });
+  server.register(dealTypesRoutes, { prefix: "/api/deal-types" });
+  server.register(entitiesRoutes, { prefix: "/api/entities" });
+  server.register(entitiesGrRoutes, { prefix: "/api/entities-gr" });
+  server.register(horizontalsRoutes, { prefix: "/api/horizontals" });
+  server.register(verticalsRoutes, { prefix: "/api/verticals" });
+  server.register(customersRoutes, { prefix: "/api/customers" });
+  server.register(resourcesRoutes, { prefix: "/api/resources" });
+  server.register(employeesRoutes, { prefix: "/api/employees" });
+  server.register(projectsRoutes, { prefix: "/api/projects" });
+  server.register(rolesRoutes, { prefix: "/api/roles" });
+  server.register(employeeRolesRoutes, { prefix: "/api/employee-roles" });
 
   const port = Number(process.env.PORT || 5000);
   try {

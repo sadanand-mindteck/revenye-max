@@ -8,6 +8,11 @@ export async function initDatabases() {
 // ✅ SQLite
   const sqliteRaw = new Database(process.env.SQLITE_PATH || 'server/dev.sqlite',);
   const sqlite = drizzleSqlite(sqliteRaw);
+  // expose the underlying better-sqlite3 raw instance for cases where
+  // we need to run raw SQL or prepared statements (e.g. simple users table).
+  // This keeps backward compatibility with existing code that expects
+  // `sqlite.raw` to exist.
+  (sqlite as any).raw = sqliteRaw;
 
   // ✅ MySQL
   const mysqlPool = mysql.createPool({host: process.env.MYSQL_HOST || '127.0.0.1',
