@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, serial } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
-export const roles = sqliteTable('roles', {
-  id: text('id').primaryKey(),
+export const roles = pgTable('roles', {
+  id: serial('id').primaryKey(),
   name: text('name').notNull(),
 });
 

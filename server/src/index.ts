@@ -13,7 +13,6 @@ import healthRoutes from "./routes/health.route";
 import authRoutes from "./routes/auth.route";
 import regionRoutes from "./routes/region.route";
 import businessTypesRoutes from "./routes/businessTypes.route";
-import classificationRoutes from "./routes/classification.route";
 import dealTypesRoutes from "./routes/dealTypes.route";
 import entitiesRoutes from "./routes/entities.route";
 import entitiesGrRoutes from "./routes/entities-gr.route";
@@ -37,7 +36,7 @@ async function start() {
   server.setSerializerCompiler(serializerCompiler);
   await server.register(cors, { origin: true });
   await server.register(multipart);
-  await server.register(fastifyJwt, { secret: process.env.JWT_SECRET || "change-me" });
+  await server.register(fastifyJwt, { secret: process.env.JWT_SECRET! });
 
   // initialize DB connections before registering routes that depend on them
   const dbs = await initDatabases();
@@ -71,7 +70,6 @@ async function start() {
   server.register(authRoutes, { prefix: "/api/auth" });
   server.register(regionRoutes, { prefix: "/api/regions" });
   server.register(businessTypesRoutes, { prefix: "/api/business-types" });
-  server.register(classificationRoutes, { prefix: "/api/classifications" });
   server.register(dealTypesRoutes, { prefix: "/api/deal-types" });
   server.register(entitiesRoutes, { prefix: "/api/entities" });
   server.register(entitiesGrRoutes, { prefix: "/api/entities-gr" });

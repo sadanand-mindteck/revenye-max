@@ -3,6 +3,9 @@ import "@fastify/jwt";
 //
 import type { AppDatabases } from "./db";
 
+
+declare module "pg";
+
 declare module "fastify" {
   interface FastifyInstance {
     authenticate: (
@@ -21,9 +24,9 @@ declare module "fastify" {
 
 
     user: {
-      id: string;
-      email: string;
-      roles: string;
+      id: number;
+      name: string;
+      roles: string[];
     };
 }
 }
@@ -31,14 +34,14 @@ declare module "fastify" {
 declare module "@fastify/jwt" {
   interface FastifyJWT {
     payload: {
-      id: string;
-      email: string;
-      roles: string;
+      id: number;
+      name: string;
+      roles: string[];
     };
     user: {
-      id: string;
-      email: string;
-      roles: string;
+      id: number;
+      name: string;
+      roles: string[];
     };
   }
 }

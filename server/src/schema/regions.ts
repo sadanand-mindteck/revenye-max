@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { sqliteTable, text, } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, serial } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
-export const regions = sqliteTable("regions", {
-  id: text("id").primaryKey(),
+export const regions = pgTable("regions", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
 });
 

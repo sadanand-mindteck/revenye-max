@@ -19,7 +19,7 @@ export async function authPlugin(server: FastifyInstance) {
     "authorize",
     (roles: string[]) =>
       async (request: FastifyRequest, reply: FastifyReply) => {
-        if (!request.user || !roles.includes(request.user.role)) {
+        if (!request.user || !request.user.roles || !roles.some(role => request.user.roles.includes(role))) {
           return reply.code(403).send({ message: "Forbidden" });
         }
       }

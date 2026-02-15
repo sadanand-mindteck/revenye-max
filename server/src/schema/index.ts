@@ -4,7 +4,6 @@ export * from './entities';
 export * from './entities-gr';
 export * from './horizontals';
 export * from './verticals';
-export * from './classification';
 export * from './projects';
 export * from './businessTypes';
 export * from './dealTypes';

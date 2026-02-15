@@ -1,31 +1,25 @@
-import Database from "better-sqlite3";
-import { drizzle as drizzleSqlite } from "drizzle-orm/better-sqlite3";
-import mysql from "mysql2/promise";
-import { drizzle as drizzleMysql } from "drizzle-orm/mysql2";
+
+import { Pool } from "pg";
+import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 
 export async function initDatabases() {
+  // ✅ Postgres using node-postgres (pg)
+  // prefer explicit DATABASE_URL when provided, otherwise build structured config
+  const poolConfig = {
+    host: process.env.PG_HOST,
+    port: Number(process.env.PG_PORT),
+    user: process.env.PG_USER,
+    password: process.env.PG_PASSWORD,
+    database: process.env.PG_DATABASE,
+  };
 
-// ✅ SQLite
-  const sqliteRaw = new Database(process.env.SQLITE_PATH || 'server/dev.sqlite',);
-  const sqlite = drizzleSqlite(sqliteRaw);
-  // expose the underlying better-sqlite3 raw instance for cases where
-  // we need to run raw SQL or prepared statements (e.g. simple users table).
-  // This keeps backward compatibility with existing code that expects
-  // `sqlite.raw` to exist.
-  (sqlite as any).raw = sqliteRaw;
+  const pool = new Pool(poolConfig as any);
 
-  // ✅ MySQL
-  const mysqlPool = mysql.createPool({host: process.env.MYSQL_HOST || '127.0.0.1',
-        port: Number(process.env.MYSQL_PORT || 3306),
-        user: process.env.MYSQL_USER || 'root',
-        password: process.env.MYSQL_PASSWORD || '',
-        database: process.env.MYSQL_DATABASE || 'revenuemax'});
-  const mysqlDb = drizzleMysql(mysqlPool);
+  const pg = drizzlePg(pool);
 
- 
   return {
-    sqlite,      // ← DRIZZLE INSTANCE
-    mysql: mysqlDb,  // ← DRIZZLE INSTANCE
+    pg, // ← DRIZZLE INSTANCE for Postgres
+    pool, // raw pg Pool for raw queries
   };
 }
 

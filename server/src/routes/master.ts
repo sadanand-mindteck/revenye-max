@@ -1,7 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod/dist/cjs/core.cjs";
 import { eq, like } from "drizzle-orm";
-import { randomUUID } from "crypto";
 import { z, ZodObject, ZodRawShape } from "zod";
 
 export function createMasterCrud<
@@ -19,6 +18,18 @@ export function createMasterCrud<
 }) {
   const typed = server.withTypeProvider<ZodTypeProvider>();
 
+  function tryParseRoles(obj: any) {
+    if (!obj || typeof obj !== 'object') return obj;
+    if (typeof obj.roles === 'string') {
+      try {
+        obj.roles = JSON.parse(obj.roles);
+      } catch (e) {
+        // leave as-is
+      }
+    }
+    return obj;
+  }
+
   // CREATE
   typed.post(
     "/",
@@ -26,14 +37,15 @@ export function createMasterCrud<
     async (request, reply) => {
       const body = request.body as z.infer<TSchema>;
 
-      const newItem = {
-        id: randomUUID(),
+      const newItem: any = {
         ...body,
       };
 
-      await server.db.sqlite.insert(table).values(newItem);
+      if (Array.isArray(newItem.roles)) newItem.roles = JSON.stringify(newItem.roles);
 
-      return reply.status(201).send(newItem);
+      const inserted = await (server as any).db.pg.insert(table).values(newItem).returning();
+      const resp = inserted && inserted.length > 0 ? tryParseRoles(inserted[0]) : tryParseRoles(newItem);
+      return reply.status(201).send(resp);
     }
   );
 
@@ -42,7 +54,7 @@ export function createMasterCrud<
     "/:id",
     {
       schema: {
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: z.coerce.number() }),
         body: createSchema.partial(),
       },
     },
@@ -50,24 +62,18 @@ export function createMasterCrud<
       const { id } = request.params;
       const body = request.body as Partial<z.infer<TSchema>>;
 
-      const existing = await server.db.sqlite
+      const existing = await (server as any).db.pg
         .select()
         .from(table)
         .where(eq(table.id, id));
-
-      if (!existing) {
-        return reply.status(404).send({
-          message: `${entityName} not found`,
-        });
+      if (!existing || (Array.isArray(existing) && existing.length === 0)) {
+        return reply.status(404).send({ message: `${entityName} not found` });
       }
 
-      await server.db.sqlite
-        .update(table)
-        .set({
-          ...body,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(table.id, id));
+      const setData: any = { ...body, updatedAt: new Date().toISOString() };
+      if (Array.isArray(setData.roles)) setData.roles = JSON.stringify(setData.roles);
+
+      await (server as any).db.pg.update(table).set(setData).where(eq(table.id, id));
 
       return { message: `${entityName} updated successfully` };
     }
@@ -93,7 +99,7 @@ export function createMasterCrud<
         ? like(table.name, `%${search}%`)
         : undefined;
 
-      return server.db.sqlite
+      return server.db.pg
         .select()
         .from(table)
         .where(whereCondition)
@@ -107,22 +113,21 @@ export function createMasterCrud<
     "/:id",
     {
       schema: {
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: z.coerce.number() }),
       },
     },
     async (request, reply) => {
-      const item = await server.db.sqlite
+      const { id } = request.params;
+      const item = await (server as any).db.pg
         .select()
         .from(table)
-        .where(eq(table.id, request.params.id));
+        .where(eq(table.id, id));
 
-      if (!item) {
-        return reply.status(404).send({
-          message: `${entityName} not found`,
-        });
+      if (!item || (Array.isArray(item) && item.length === 0)) {
+        return reply.status(404).send({ message: `${entityName} not found` });
       }
 
-      return item;
+      return tryParseRoles(item[0] ?? item);
     }
   );
 
@@ -131,21 +136,19 @@ export function createMasterCrud<
     "/:id",
     {
       schema: {
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: z.coerce.number() }),
       },
     },
     async (request) => {
-      await server.db.sqlite
-        .delete(table)
-        .where(eq(table.id, request.params.id));
-
+      const { id } = request.params;
+      await (server as any).db.pg.delete(table).where(eq(table.id, id));
       return { message: `${entityName} deleted successfully` };
     }
   );
 
   // OPTIONS
   server.get("/options", async () => {
-    return server.db.sqlite
+    return server.db.pg
       .select({
         id: table.id,
         name: table.name,

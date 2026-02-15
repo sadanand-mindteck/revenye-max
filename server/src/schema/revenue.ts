@@ -1,15 +1,16 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, real, serial } from "drizzle-orm/pg-core";
+import { sql } from 'drizzle-orm';
 import { z } from "zod";
 import { projects } from './projects';
-
+  
 /* =====================================================
    Project Revenue (Transactional)
 ===================================================== */
 
-export const revenue = sqliteTable("revenue", {
-  id: text("id").primaryKey(),
+export const revenue = pgTable("revenue", {
+  id: serial("id").primaryKey(),
 
-  projectId: text("project_id")
+  projectId: integer("project_id")
     .notNull()
     .references(() => projects.id),
 
@@ -33,7 +34,7 @@ export type Revenue = typeof revenue.$inferSelect;
 export type NewRevenue = typeof revenue.$inferInsert;
 
 export const RevenueCreateZ = z.object({
-  projectId: z.string().min(1, 'Project ID is required'),
+  projectId: z.number().int().min(1, 'Project ID is required'),
   financialYear: z.string().min(1, 'Financial Year is required'),
   financialMonth: z.number().int().min(1).max(12, 'Financial Month must be between 1 and 12'),
   forecast: z.number().optional(),
