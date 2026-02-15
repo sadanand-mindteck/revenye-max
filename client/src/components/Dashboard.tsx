@@ -282,7 +282,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                  title={isPracticeView ? "Utilization Risk" : isBUHView ? "P&L Variance" : "System Update"}
                  desc={isPracticeView ? "AI Practice utilization hitting 98%. Risk of developer burnout detected." :
                        isBUHView ? "Digital Engineering BU showing 4% negative variance in actual costs." :
-                       "Monthly RevenueMax core logic updated to version 4.2. Review documentation."}
+                       "Monthly Mindteck core logic updated to version 4.2. Review documentation."}
                  tag="Action Needed"
                  color="text-amber-400"
                />

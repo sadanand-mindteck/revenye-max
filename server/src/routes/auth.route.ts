@@ -11,6 +11,11 @@ const LoginSchema = z.object({
   password: z.string().min(1),
 });
 
+const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6),
+});
+
 export default async function (server: FastifyInstance) {
   // register user (writes go to sqlite only)
   server.withTypeProvider<ZodTypeProvider>().post(
@@ -55,7 +60,7 @@ export default async function (server: FastifyInstance) {
       const empRoles = await server.db.pg.select().from(employeeRoles).innerJoin(roles, eq(employeeRoles.roleId, roles.id)).where(eq(employeeRoles.employeeId, row.id)).then(rows => rows.map(r => r.roles.name));
 
       const token = server.jwt.sign({ id: row.id, name: row.name, roles: empRoles });
-      return reply.send({ token });
+      return reply.send({ token, user: { id: row.id, name: row.name, email: row.email, employeeCode: row.employeeCode, roles: empRoles } });
     } catch (err: any) {
       server.log.error(err);
       return reply.code(500).send({ error: err.message || "login failed" });
@@ -70,6 +75,46 @@ export default async function (server: FastifyInstance) {
     return reply.send({ message: "logged out" });
   });
 
+  server.withTypeProvider<ZodTypeProvider>().post(
+    "/change-password",
+    {
+      schema: {
+        body: ChangePasswordSchema,
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = request.user;
+        if (!user?.id) {
+          return reply.code(401).send({ error: "Unauthorized" });
+        }
+
+        const { currentPassword, newPassword } = request.body;
+        const row = await server.db.pg
+          .select()
+          .from(employees)
+          .where(eq(employees.id, user.id))
+          .then((rows) => rows[0]);
+
+        if (!row) return reply.code(404).send({ error: "User not found" });
+
+        const ok = await verifyPassword(currentPassword, row.password);
+        if (!ok) return reply.code(401).send({ error: "Invalid current password" });
+
+        const hashed = await hashPassword(newPassword);
+        await server.db.pg
+          .update(employees)
+          .set({ password: hashed })
+          .where(eq(employees.id, user.id));
+
+        return reply.send({ message: "Password updated" });
+      } catch (err: any) {
+        server.log.error(err);
+        return reply.code(500).send({ error: err.message || "change password failed" });
+      }
+    },
+  );
+
   // simple me endpoint — verifies JWT and returns decoded token payload
   server.get(
     "/me",
@@ -82,8 +127,7 @@ export default async function (server: FastifyInstance) {
     },
     async (request: FastifyRequest) => {
       // request.user is populated by fastify-jwt after jwtVerify
-      // @ts-ignore
-      const user = (request as any).user;
+      const user = request.user;
       return { user };
     },
   );

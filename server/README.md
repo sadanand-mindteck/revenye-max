@@ -1,4 +1,4 @@
-# RevenueMax — Server (starter)
+# Mindteck — Server (starter)
 
 This folder contains a starter Fastify + Drizzle + Zod TypeScript backend scaffold.
 

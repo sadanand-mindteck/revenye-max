@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { MOCK_DEALS } from '@/constants';
 
-const DealManagement: React.FC = () => {
+const DealManagement = () => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const toggleRow = (id: string) => {

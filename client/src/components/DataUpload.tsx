@@ -99,7 +99,7 @@ const DataUpload: React.FC = () => {
             <h2 className="text-4xl font-black tracking-tight mb-2">Central Data Ingestion Hub</h2>
             <p className="text-slate-400 font-medium leading-relaxed">
               Batch process global revenue data, master configurations, and project portfolio metadata. 
-              Ensure Excel templates align with the <span className="text-blue-400 underline cursor-pointer">RevenueMax V4 Schema</span>.
+              Ensure Excel templates align with the <span className="text-blue-400 underline cursor-pointer">Mindteck V4 Schema</span>.
             </p>
           </div>
           <button className="flex items-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shrink-0">

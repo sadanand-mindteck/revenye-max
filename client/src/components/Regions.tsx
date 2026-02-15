@@ -8,7 +8,7 @@ import { MOCK_DEALS } from '@/constants';
 
 type ViewLevel = 'global' | 'region' | 'bu' | 'bdm';
 
-const Regions: React.FC = () => {
+const Regions = () => {
   const [viewLevel, setViewLevel] = useState<ViewLevel>('global');
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedBU, setSelectedBU] = useState<string | null>(null);

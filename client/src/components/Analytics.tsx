@@ -13,7 +13,7 @@ const analyticsData = [
   { period: '2024-H2', revenue: 7900, profit: 2800, margin: 35 },
 ];
 
-const Analytics: React.FC = () => {
+const Analytics = () => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-700">
       <div className="flex items-center justify-between">

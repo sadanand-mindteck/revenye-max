@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, Search, Bell, ChevronDown, UserCircle, ShieldCheck } from 'lucide-react';
+import { Calendar, Bell, ChevronDown, UserCircle, ShieldCheck } from 'lucide-react';
 import { FISCAL_YEARS } from '@/constants';
 import { User } from '@/types';
 
@@ -9,9 +9,10 @@ interface HeaderProps {
   setFiscalYear: (fy: string) => void;
   activeTabLabel: string;
   user: User | null;
+  onOpenProfile: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ fiscalYear, setFiscalYear, activeTabLabel, user }) => {
+const Header: React.FC<HeaderProps> = ({ fiscalYear, setFiscalYear, activeTabLabel, user, onOpenProfile }) => {
   if (!user) return null;
 
   return (
@@ -51,7 +52,10 @@ const Header: React.FC<HeaderProps> = ({ fiscalYear, setFiscalYear, activeTabLab
         
         <div className="h-8 w-px bg-slate-200 mx-2"></div>
 
-        <button className="flex items-center gap-2 pl-2 pr-1 py-1 hover:bg-slate-50 rounded-xl border border-transparent hover:border-slate-200 transition-all">
+        <button
+          onClick={onOpenProfile}
+          className="flex items-center gap-2 pl-2 pr-1 py-1 hover:bg-slate-50 rounded-xl border border-transparent hover:border-slate-200 transition-all"
+        >
           <div className="text-right hidden sm:block">
             <p className="text-xs font-black text-slate-900 leading-tight uppercase tracking-tight">{user.name}</p>
             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{user.role}</p>

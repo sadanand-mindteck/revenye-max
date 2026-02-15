@@ -1,7 +1,11 @@
 
+/// <reference types="vite/client" />
+
 import React from 'react';
 import { LayoutDashboard, Briefcase, FilePlus, Settings, Users, BarChart3, Globe, Database } from 'lucide-react';
 import { Deal, UserRole } from './types';
+
+export const HOST = import.meta.env.VITE_API_HOST || 'http://localhost:5000/api';
 
 export const NAVIGATION_ITEMS = [
   { id: 'dashboard', label: 'Executive Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -14,11 +18,12 @@ export const NAVIGATION_ITEMS = [
 ];
 
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  [UserRole.ADMIN]: ['dashboard', 'deals', 'entry', 'analytics', 'regions', 'upload', 'settings'],
-  [UserRole.CSO]: ['dashboard', 'deals', 'analytics', 'regions'],
-  [UserRole.BUH]: ['dashboard', 'deals', 'analytics', 'regions'],
-  [UserRole.BDM]: ['dashboard', 'deals', 'entry'],
-  [UserRole.PRACTICE_HEAD]: ['dashboard', 'deals', 'entry', 'analytics'],
+  [UserRole.ADMIN]: ['dashboard', 'deals', 'entry', 'analytics', 'regions', 'upload', 'settings', 'profile'],
+  [UserRole.CSO]: ['dashboard', 'deals', 'analytics', 'regions', 'profile'],
+  [UserRole.BUH]: ['dashboard', 'deals', 'analytics', 'regions', 'profile'],
+  [UserRole.BDM]: ['dashboard', 'deals', 'entry', 'profile'],
+  [UserRole.PRACTICE_HEAD]: ['dashboard', 'deals', 'entry', 'analytics', 'profile'],
+  [UserRole.GEO_HEAD]: ['dashboard', 'deals', 'analytics', 'regions', 'profile'],
 };
 
 export const MOCK_DEALS: Deal[] = [
