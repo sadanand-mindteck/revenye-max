@@ -1,9 +1,9 @@
 export enum UserRole {
   CSO = 'CSO',
   BUH = 'BUH',
+  GEO_HEAD = 'Geo Head',
   BDM = 'BDM',
   PRACTICE_HEAD = 'Practice Head',
-  MARKETING = 'Marketing',
   ADMIN = 'Admin'
 }
 

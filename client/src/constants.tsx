@@ -19,7 +19,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   [UserRole.BUH]: ['dashboard', 'deals', 'analytics', 'regions'],
   [UserRole.BDM]: ['dashboard', 'deals', 'entry'],
   [UserRole.PRACTICE_HEAD]: ['dashboard', 'deals', 'entry', 'analytics'],
-  [UserRole.MARKETING]: ['dashboard', 'deals', 'analytics'],
 };
 
 export const MOCK_DEALS: Deal[] = [

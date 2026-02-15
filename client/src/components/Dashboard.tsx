@@ -51,7 +51,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const isBUHView = user.role === UserRole.BUH;
   const isBDMView = user.role === UserRole.BDM;
   const isPracticeView = user.role === UserRole.PRACTICE_HEAD;
-  const isMarketingView = user.role === UserRole.MARKETING;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -62,7 +61,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           {isBDMView && <Briefcase size={180} />}
           {isBUHView && <Layers size={180} />}
           {isPracticeView && <Zap size={180} />}
-          {isMarketingView && <Users size={180} />}
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
@@ -78,7 +76,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             {isBUHView && "Your Business Unit is currently at 84% capacity. Margin protection is high, but delivery velocity needs attention."}
             {isBDMView && "You are 12% ahead of your quarterly quota. Two high-value deals in 'Final Negotiation' require immediate focus."}
             {isPracticeView && "Resource utilization has stabilized at 88%. Training certification for Cloud Practice is now 92% complete."}
-            {isMarketingView && "Pipeline contribution from digital campaigns has increased by 18% this month. SQL quality is up by 5%."}
           </p>
         </div>
       </div>
@@ -117,14 +114,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <KPICard title="Risk Factor" value="Low" trend="Stable" icon={<AlertCircle size={22} />} color="indigo" />
           </>
         )}
-        {isMarketingView && (
-          <>
-            <KPICard title="MQL Generated" value="842" trend="+18%" icon={<Users size={22} />} color="blue" />
-            <KPICard title="Cost per Lead" value="$42" trend="-$4" icon={<DollarSign size={22} />} color="emerald" />
-            <KPICard title="Funnel Velocity" value="12 Days" trend="-2 Days" icon={<Activity size={22} />} color="slate" />
-            <KPICard title="Social Engagement" value="4.2K" trend="+24%" icon={<TrendingUp size={22} />} color="indigo" />
-          </>
-        )}
+      
       </div>
 
       {/* Primary Chart Section */}
@@ -133,8 +123,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <div className="flex items-center justify-between mb-10">
             <div>
               <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                {isMarketingView ? "Campaign Attribution Performance" : 
-                 isPracticeView ? "Project Delivery Timeline" : "Revenue Trajectory Analysis"}
+                {isPracticeView ? "Project Delivery Timeline" : "Revenue Trajectory Analysis"}
               </h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time Data Stream • FY 2024</p>
             </div>
@@ -146,16 +135,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              {isMarketingView ? (
-                <BarChart data={marketingLeads}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11, fontWeight: 700}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11, fontWeight: 700}} />
-                  <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} />
-                  <Bar dataKey="leads" fill="#3b82f6" radius={[10, 10, 0, 0]} barSize={40} />
-                  <Bar dataKey="conv" fill="#10b981" radius={[10, 10, 0, 0]} barSize={40} />
-                </BarChart>
-              ) : (
+             
                 <AreaChart data={trendData}>
                   <defs>
                     <linearGradient id="colorFct" x1="0" y1="0" x2="0" y2="1">
@@ -171,7 +151,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   <Area type="monotone" dataKey="act" stroke="#10b981" strokeWidth={4} fill="transparent" />
                   <Line type="monotone" dataKey="bgt" stroke="#94a3b8" strokeWidth={2} strokeDasharray="8 8" dot={false} />
                 </AreaChart>
-              )}
             </ResponsiveContainer>
           </div>
         </div>
@@ -246,33 +225,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 </div>
               )}
 
-              {isMarketingView && (
-                 <div className="space-y-8">
-                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                     <MessageSquare size={18} className="text-emerald-500" /> Social Sentiment Score
-                   </h3>
-                   <div className="flex items-center justify-center py-10">
-                      <div className="relative h-40 w-40 flex items-center justify-center">
-                         <div className="absolute inset-0 rounded-full border-[12px] border-slate-100 border-t-emerald-500 rotate-[45deg]"></div>
-                         <div className="text-center">
-                           <p className="text-4xl font-black text-slate-900">8.4</p>
-                           <p className="text-[9px] font-black text-emerald-600 uppercase">Positive</p>
-                         </div>
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-50 rounded-2xl text-center">
-                         <p className="text-[9px] font-black text-slate-400 uppercase">Brand Reach</p>
-                         <p className="text-lg font-black text-slate-900">12.4M</p>
-                      </div>
-                      <div className="p-4 bg-slate-50 rounded-2xl text-center">
-                         <p className="text-[9px] font-black text-slate-400 uppercase">Share of Voice</p>
-                         <p className="text-lg font-black text-slate-900">32%</p>
-                      </div>
-                   </div>
-                </div>
-              )}
-
+            
               {isBUHView && (
                 <div className="space-y-8">
                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
@@ -319,9 +272,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                <ActionCard 
-                 title={isBDMView ? "Deal Staleness" : isMarketingView ? "Campaign Expiry" : "Governance Alert"}
+                 title={isBDMView ? "Deal Staleness" : "Governance Alert"}
                  desc={isBDMView ? "Alpha Corp deal hasn't moved stages in 12 days. Requires engagement." : 
-                       isMarketingView ? "Summer Tech campaign budget exhausted. Auto-paused." :
                        "Three projects in Europe Zone missing Q3 forecast baseline."}
                  tag="High Priority"
                  color="text-red-400"

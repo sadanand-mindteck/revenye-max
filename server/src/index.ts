@@ -6,7 +6,9 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import multipart from "@fastify/multipart";
 import fastifyJwt from "@fastify/jwt";
 
-
+import { authPlugin } from "./plugins/auth";
+import { authenticate } from "./middleware/authenticate.middleware";
+import { setupErrorHandler } from "./Error";
 
 import { initDatabases } from "./db";
 import healthRoutes from "./routes/health.route";
@@ -24,9 +26,8 @@ import employeesRoutes from "./routes/employees.route";
 import projectsRoutes from "./routes/projects.route";
 import rolesRoutes from "./routes/roles.route";
 import employeeRolesRoutes from "./routes/employeeRoles.route";
-import { authPlugin } from "./plugins/auth";
-import { authenticate } from "./middleware/authenticate.middleware";
-import { setupErrorHandler } from "./Error";
+import { createExcelUploadRoute } from "./routes/excelUpload.routes";
+
 
 const server = Fastify({ logger: true });
 // Add schema validator and serializer
@@ -81,6 +82,7 @@ async function start() {
   server.register(projectsRoutes, { prefix: "/api/projects" });
   server.register(rolesRoutes, { prefix: "/api/roles" });
   server.register(employeeRolesRoutes, { prefix: "/api/employee-roles" });
+  server.register(createExcelUploadRoute, { prefix: "/api/data" });
 
   const port = Number(process.env.PORT || 5000);
   try {
