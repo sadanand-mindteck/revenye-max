@@ -44,21 +44,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const loginMutation = useMutation({
     mutationFn: async (payload: LoginForm) => {
       const response = await apiClient.post('/auth/login', payload);
-      return response.data as {
-        token: string;
-        user: {
-          id: string | number;
-          name: string;
-          email: string;
-          employeeCode?: string | null;
-          roles?: string[];
-        };
-      };
+      return response.data;
     },
     onSuccess: (data) => {
+      console.log('Login successful:', data);
       const apiRole = data.user.roles?.[0] ?? 'BDM';
       const role = roleMap[apiRole] ?? UserRole.BDM;
-      localStorage.setItem('revenue_max_token', data.token);
+      localStorage.setItem('token', data.token);
       onLogin({
         id: String(data.user.id),
         name: data.user.name,

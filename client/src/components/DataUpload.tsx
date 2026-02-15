@@ -5,6 +5,7 @@ import {
   CheckCircle2, AlertCircle, Loader2, Info, ArrowRight,
   ShieldAlert, Layers, Briefcase, Globe, X, FileText
 } from 'lucide-react';
+import { apiClient } from '@/api/client';
 
 type UploadStatus = 'idle' | 'uploading' | 'processing' | 'success' | 'error';
 
@@ -15,62 +16,63 @@ interface FileState {
   message: string;
 }
 
+
+const getSessionYears = () => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  // If before April, treat as previous session
+  const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
+  return [
+    `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
+    `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
+    `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
+    `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
+  ];
+};
+
 const DataUpload: React.FC = () => {
   const [states, setStates] = useState<Record<string, FileState>>({
     master: { file: null, status: 'idle', progress: 0, message: '' },
     financial: { file: null, status: 'idle', progress: 0, message: '' },
     projects: { file: null, status: 'idle', progress: 0, message: '' }
   });
+  const sessionYears = getSessionYears();
+  const [selectedSession, setSelectedSession] = useState(sessionYears[2]);
 
-  const handleFileSelect = (type: string, file: File) => {
+  const handleFileSelect = async (type: string, file: File) => {
     setStates(prev => ({
       ...prev,
       [type]: { file, status: 'uploading', progress: 0, message: 'Transferring to secure buffer...' }
     }));
 
-    // Multi-stage simulation
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 30;
-      if (progress >= 100) {
-        clearInterval(interval);
-        processFile(type);
-      } else {
-        setStates(prev => ({
-          ...prev,
-          [type]: { ...prev[type], progress: Math.min(progress, 99) }
-        }));
-      }
-    }, 400);
-  };
 
-  const processFile = (type: string) => {
-    setStates(prev => ({
-      ...prev,
-      [type]: { ...prev[type], status: 'processing', progress: 100, message: 'Analyzing Schema & Mapping Headers...' }
-    }));
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('session', selectedSession);
 
-    setTimeout(() => {
-      setStates(prev => ({
-        ...prev,
-        [type]: { ...prev[type], message: 'Validating row integrity (842/842)...' }
-      }));
-
-      setTimeout(() => {
-        setStates(prev => ({
-          ...prev,
-          [type]: { ...prev[type], status: 'success', message: 'Batch successfully committed to Master Ledger.' }
-        }));
-        
-        // Final reset after a delay
-        setTimeout(() => {
+    try {
+     await apiClient.post('/data/upload-excel', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setStates(prev => ({
             ...prev,
-            [type]: { file: null, status: 'idle', progress: 0, message: '' }
+            [type]: { ...prev[type], progress: percent }
           }));
-        }, 5000);
-      }, 2000);
-    }, 2000);
+        }
+      });
+
+      setStates(prev => ({
+        ...prev,
+        [type]: { ...prev[type], status: 'success', message: 'Upload successful.' }
+      }));
+
+    } catch (error) {
+      setStates(prev => ({
+        ...prev,
+        [type]: { ...prev[type], status: 'error', progress: 0, message: 'Upload failed. Please try again.' }
+      }));
+    }
   };
 
   const cancelUpload = (type: string) => {
@@ -82,8 +84,22 @@ const DataUpload: React.FC = () => {
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+      {/* Session Selector */}
+      <div className="flex items-center gap-4 mb-4">
+        <label htmlFor="session-select" className="font-bold text-slate-700 text-sm">Session Year:</label>
+        <select
+          id="session-select"
+          className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          value={selectedSession}
+          onChange={e => setSelectedSession(e.target.value)}
+        >
+          {sessionYears.map((session) => (
+            <option key={session} value={session}>{session}</option>
+          ))}
+        </select>
+      </div>
       {/* Admin Safety Header */}
-      <div className="bg-slate-900 rounded-[40px] p-10 text-white shadow-2xl relative overflow-hidden group">
+      {/* <div className="bg-slate-900 rounded-[40px] p-10 text-white shadow-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12">
           <Database size={200} />
         </div>
@@ -106,21 +122,21 @@ const DataUpload: React.FC = () => {
             <Download size={16} /> Get Template Pack (.ZIP)
           </button>
         </div>
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <UploadCard 
           id="master"
-          title="Master Configuration"
-          description="Update global Regions, Locations, BU Hierarchy, and Group Heads."
-          icon={<Globe className="text-blue-500" />}
+          title="Upload Master Data"
+          description=""
+          icon={<FileSpreadsheet className="text-blue-500" />}
           state={states.master}
           onFileSelect={(file) => handleFileSelect('master', file)}
           onCancel={() => cancelUpload('master')}
-          fields={['Location Mapping', 'Region Codes', 'BU Controller List']}
+          fields={[]}
         />
 
-        <UploadCard 
+        {/* <UploadCard 
           id="financial"
           title="Financial Batch Sync"
           description="Bulk update Forecasts, Actuals, and Budgets across all active cost centers."
@@ -140,7 +156,7 @@ const DataUpload: React.FC = () => {
           onFileSelect={(file) => handleFileSelect('projects', file)}
           onCancel={() => cancelUpload('projects')}
           fields={['Project Name', 'Customer Master', 'Deal Type Registry']}
-        />
+        /> */}
       </div>
 
       {/* Audit Log / History Preview */}
@@ -225,7 +241,7 @@ const UploadCard: React.FC<UploadCardProps> = ({ id, title, description, icon, s
   };
 
   return (
-    <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm hover:shadow-xl transition-all flex flex-col h-full group">
+    <div className="bg-white p-8 rounded-4xl  border border-slate-200 shadow-sm hover:shadow-xl transition-all flex flex-col h-full group">
       <div className="flex justify-between items-start mb-6">
         <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-slate-900 group-hover:text-white transition-all">
           {icon}
@@ -243,7 +259,7 @@ const UploadCard: React.FC<UploadCardProps> = ({ id, title, description, icon, s
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-[32px] p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
               isDragging ? 'bg-blue-50 border-blue-400' : 'bg-slate-50 border-slate-200 hover:border-blue-300'
             }`}
           >

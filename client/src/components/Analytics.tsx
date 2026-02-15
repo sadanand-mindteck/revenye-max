@@ -46,7 +46,7 @@ const Analytics = () => {
                </div>
             </div>
           </div>
-          <div className="h-[400px] w-full">
+          <div className="h-100 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={analyticsData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />

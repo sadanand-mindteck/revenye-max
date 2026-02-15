@@ -55,7 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       {/* Dynamic Role-Based Welcome Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900 rounded-[40px] p-10 text-white shadow-2xl relative overflow-hidden group">
+      <div className="bg-linear-to-r from-slate-900 via-slate-800 to-blue-900 rounded-[40px] p-10 text-white shadow-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
           {isGlobalView && <Globe size={180} />}
           {isBDMView && <Briefcase size={180} />}
@@ -133,7 +133,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </div>
           </div>
           
-          <div className="h-[400px] w-full">
+          <div className="h-100 w-full">
             <ResponsiveContainer width="100%" height="100%">
              
                 <AreaChart data={trendData}>
@@ -213,7 +213,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
                      <Zap size={18} className="text-amber-500" /> Skill Inventory Index
                    </h3>
-                   <div className="h-[280px]">
+                   <div className="h-70">
                       <ResponsiveContainer width="100%" height="100%">
                         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={skillData}>
                           <PolarGrid stroke="#f1f5f9" />
@@ -300,7 +300,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 };
 
 const ActionCard = ({ title, desc, tag, color }) => (
-  <div className="p-8 bg-white/5 border border-white/10 rounded-[32px] hover:bg-white/10 transition-all cursor-pointer group">
+  <div className="p-8 bg-white/5 border border-white/10 rounded-4xl hover:bg-white/10 transition-all cursor-pointer group">
     <div className="flex items-center justify-between mb-4">
        <span className={`text-[10px] font-black uppercase tracking-widest ${color}`}>{tag}</span>
        <ArrowUpRight size={16} className="text-slate-500 group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />

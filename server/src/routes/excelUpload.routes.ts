@@ -1,41 +1,61 @@
 import { FastifyInstance } from "fastify";
 import ExcelJS from "exceljs";
+import { log } from "console";
 
 export function createExcelUploadRoute(server: FastifyInstance) {
+
   server.post("/upload-excel", async (request, reply) => {
-    const data = await request.file();
+  const parts = request.parts();
 
-    if (!data) {
-      return reply.status(400).send({ message: "No file uploaded" });
+  let session: string | undefined;
+  let fileBuffer: Buffer | undefined;
+
+  for await (const part of parts) {
+    if (part.type === "file") {
+      fileBuffer = await part.toBuffer();
     }
 
-    const fileBuffer = await data.toBuffer();
-    const safeBuffer = Buffer.from(fileBuffer);
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(safeBuffer.buffer);
-
-    const worksheet = workbook.getWorksheet(1); // first sheet
-
-    if (!worksheet) {
-      return reply.status(400).send({ message: "No worksheet found" });
+    if (part.type === "field" && part.fieldname === "session") {
+      session = part.value as string;
     }
+  }
 
-    const rows: any[] = [];
+  if (!fileBuffer) {
+    return reply.status(400).send({ message: "No file uploaded" });
+  }
 
-    worksheet.eachRow((row, rowNumber) => {
-      // Skip header if needed
-      if (rowNumber === 1) return;
+  console.log("Session Year:", session);
 
-      const rowData: any[] = [];
+  const workbook = new ExcelJS.Workbook();
+  //@ts-ignore
+  await workbook.xlsx.load(fileBuffer);
 
-      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-        rowData[colNumber - 1] = cell.value;
-      });
+  const worksheet = workbook.getWorksheet(1);
 
-      rows.push(rowData);
+  if (!worksheet) {
+    return reply.status(400).send({ message: "No worksheet found" });
+  }
+
+  const rows: any[] = [];
+
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber <= 2) return; // skip header rows
+
+    const rowData: any[] = [];
+
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      rowData[colNumber - 1] = cell.value;
     });
 
-    console.log(rows);
-    return reply.send({ message: "File processed successfully", data: rows });
+    rows.push(rowData);
   });
+  // log("Extracted Rows:", rows);
+
+  return reply.send({
+    message: "File processed successfully",
+    session: session,
+    totalRows: rows.length,
+  });
+});
+
 }
