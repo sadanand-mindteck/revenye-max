@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { 
   FileUp, Database, FileSpreadsheet, Download, 
   CheckCircle2, AlertCircle, Loader2, Info, ArrowRight,
-  ShieldAlert, Layers, Briefcase, Globe, X, FileText
+  ShieldAlert, Layers, Briefcase, Globe, X, FileText, ChevronDown, Table
 } from 'lucide-react';
 import { apiClient } from '@/api/client';
 
@@ -15,7 +15,6 @@ interface FileState {
   progress: number;
   message: string;
 }
-
 
 const getSessionYears = () => {
   const now = new Date();
@@ -36,7 +35,6 @@ const DEFAULT_HEADERS = [
   "Customer Name", "Project Name", "Practice Head", "BDM", "GeoHead", "Vertical", "Horizontal"
 ];
 
-
 const DataUpload: React.FC = () => {
   const [states, setStates] = useState<Record<string, FileState>>({
     master: { file: null, status: 'idle', progress: 0, message: '' },
@@ -49,30 +47,26 @@ const DataUpload: React.FC = () => {
   const [pendingUpload, setPendingUpload] = useState<{type: string, file: File} | null>(null);
   const [cols, setCols] = useState([] as string[]);
 
-
   const handleFileSelect = async (type: string, file: File) => {
-    // Read headers from Excel file
     const reader = new FileReader();
     reader.onload = (e) => {
       const data = new Uint8Array(e.target!.result as ArrayBuffer);
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const range = sheet['!ref']; // e.g., "A1:AH100"
+      const range = sheet['!ref'];
       if (range) {
-        const [start, end] = range.split(':'); // start = "A1", end = "AH100"
-        const headerStart = start.replace(/[0-9]/g, ''); // "A"
-        const headerEnd = end.replace(/[0-9]/g, ''); // "AH"
-        const headerRow = start.match(/[0-9]+/)[0];
-        const headerRange = `${headerStart}${headerRow}:${headerEnd}${headerRow}`;
-        // Get all column names between headerStart and headerEnd
-        function colToNum(col) {
+        const [start, end] = range.split(':');
+        const headerStart = start.replace(/[0-9]/g, '');
+        const headerEnd = end.replace(/[0-9]/g, '');
+        
+        function colToNum(col: string) {
           let num = 0;
           for (let i = 0; i < col.length; i++) {
             num = num * 26 + (col.charCodeAt(i) - 64);
           }
           return num;
         }
-        function numToCol(num) {
+        function numToCol(num: number) {
           let col = '';
           while (num > 0) {
             let rem = (num - 1) % 26;
@@ -89,9 +83,7 @@ const DataUpload: React.FC = () => {
         }
         setCols(allCols);
         setPendingUpload({ type, file });
-        console.log('Header Range:', headerRange,  'All Cols:', allCols);
       }
-      
     };
     reader.readAsArrayBuffer(file);
   };
@@ -99,7 +91,7 @@ const DataUpload: React.FC = () => {
   const uploadFile = async (type: string, file: File) => {
     setStates(prev => ({
       ...prev,
-      [type]: { file, status: 'uploading', progress: 0, message: 'Transferring to secure buffer...' }
+      [type]: { file, status: 'uploading', progress: 0, message: 'Transferring...' }
     }));
 
     const formData = new FormData();
@@ -107,12 +99,11 @@ const DataUpload: React.FC = () => {
     formData.append('session', selectedSession);
     formData.append('mappedHeaders', JSON.stringify(Object.assign({},...DEFAULT_HEADERS.map((headerField, i) => ({[headerField]: cols[i]})))));
     
-
     try {
       await apiClient.post('/data/upload-excel', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 100));
           setStates(prev => ({
             ...prev,
             [type]: { ...prev[type], progress: percent }
@@ -122,28 +113,29 @@ const DataUpload: React.FC = () => {
 
       setStates(prev => ({
         ...prev,
-        [type]: { ...prev[type], status: 'success', message: 'Upload successful.' }
+        [type]: { ...prev[type], status: 'success', message: 'Success' }
       }));
 
     } catch (error) {
       setStates(prev => ({
         ...prev,
-        [type]: { ...prev[type], status: 'error', progress: 0, message: 'Upload failed. Please try again.' }
+        [type]: { ...prev[type], status: 'error', progress: 0, message: 'Failed' }
       }));
     }
   };
 
   const confirmHeaderMapping = () => {
-   
-      uploadFile(pendingUpload.type, pendingUpload.file);
-      setPendingUpload(null);
-   
+    if (pendingUpload) {
+      uploadFile(pendingUpload.type, pendingUpload.file); // Start upload process
+      setPendingUpload(null); // Clear pending state
+      setCols([]); // Close the dialog
+    }
   };
+
   const cancelHeaderMapping = () => {
     setPendingUpload(null);
     setCols([]);
   };
-  
 
   const cancelUpload = (type: string) => {
     setStates(prev => ({
@@ -153,158 +145,175 @@ const DataUpload: React.FC = () => {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 max-w-[1600px] mx-auto">
+      {/* Header Mapping Modal - Fixed & Improved */}
       {cols.length > 0 && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-4 md:p-8 shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <h2 className="text-xl font-black mb-4">Header Mismatch Detected</h2>
-            <p className="mb-2 text-sm text-slate-700">Align the uploaded Excel headers with the required format. You can edit the mapping below:</p>
-            <div className="mb-4 flex-1 overflow-auto">
-              <table className="min-w-full border text-xs">
-                <thead>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] animate-in fade-in duration-200 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[85vh] overflow-hidden border border-slate-200 ring-1 ring-slate-900/5">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/80 backdrop-blur shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-blue-100 text-blue-600 rounded-lg">
+                  <Table size={20} />
+                </div>
+                <div>
+                  <h2 className="text-base font-black uppercase tracking-tight text-slate-900">Map File Columns</h2>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                    Match source columns to system requirements
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={cancelHeaderMapping} 
+                className="p-2 hover:bg-slate-200/80 rounded-lg transition-colors text-slate-400 hover:text-red-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Content - Scrollable Table */}
+            <div className="flex-1 overflow-auto bg-white min-h-0">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th className="border px-2 py-1 bg-slate-100">Column</th>
-                    <th className="border px-2 py-1 bg-slate-100">Actual Header</th>
-                    <th className="border px-2 py-1 bg-slate-100">Mapped Header (Editable)</th>
+                    <th className="px-6 py-3 border-b border-gray-200 text-[10px] font-black uppercase tracking-widest text-slate-400 w-16 text-center">#</th>
+                    <th className="px-6 py-3 border-b border-gray-200 text-[10px] font-black uppercase tracking-widest text-slate-900">Required System Field</th>
+                    <th className="px-6 py-3 border-b border-gray-200 text-[10px] font-black uppercase tracking-widest text-slate-500">Source Column (Excel)</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {DEFAULT_HEADERS.map((actualHeader, i) => (
-                    <tr key={i}>
-                      <td className="border px-2 py-1 text-center">{i + 1}</td>
-                      <td className="border px-2 py-1 text-red-700">{actualHeader}</td>
-                      <td className="border px-2 py-1">
-                        <input
-                          className="border rounded px-1 py-0.5 w-40"
-                          value={cols[i] || ''}
-                          onChange={e => {
-                            const newMap = [...cols];
-                            newMap[i] = e.target.value;
-                            setCols(newMap);
-                          }}
-                        />
+                    <tr key={i} className="hover:bg-blue-50/30 transition-colors group">
+                      <td className="px-6 py-2.5 text-center text-slate-400 font-mono text-[10px] bg-slate-50/30">{i + 1}</td>
+                      <td className="px-6 py-2.5 font-bold text-slate-700">{actualHeader}</td>
+                      <td className="px-6 py-2.5">
+                        <div className="flex items-center gap-3">
+                           <div className="h-8 w-10 flex items-center justify-center bg-slate-100 border border-slate-200 rounded font-mono text-[10px] font-bold text-slate-500 shadow-sm">
+                             {cols[i] || '?'}
+                           </div>
+                           <input
+                            className="flex-1 h-9 border border-slate-200 rounded-lg px-3 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-slate-300 placeholder:font-normal uppercase"
+                            value={cols[i] || ''}
+                            onChange={e => {
+                              const newMap = [...cols];
+                              newMap[i] = e.target.value.toUpperCase();
+                              setCols(newMap);
+                            }}
+                            placeholder="Enter Column (e.g. A, AA)"
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="flex gap-4 mt-6">
-              <button className="px-6 py-2 bg-blue-600 text-white rounded font-bold" onClick={confirmHeaderMapping}>Save & Upload</button>
-              <button className="px-6 py-2 bg-slate-200 text-slate-700 rounded font-bold" onClick={cancelHeaderMapping}>Cancel</button>
+            
+            {/* Modal Footer */}
+            <div className="p-5 border-t border-slate-100 bg-slate-50/80 backdrop-blur flex justify-between items-center shrink-0">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {DEFAULT_HEADERS.length} Fields Mapped
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all shadow-sm" 
+                  onClick={cancelHeaderMapping}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="px-6 py-2.5 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 shadow-lg shadow-blue-900/20 active:translate-y-0.5 transition-all flex items-center gap-2" 
+                  onClick={confirmHeaderMapping}
+                >
+                  <CheckCircle2 size={14} /> Confirm Import
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-      {/* Session Selector */}
-      <div className="flex items-center gap-4 mb-4">
-        <label htmlFor="session-select" className="font-bold text-slate-700 text-sm">Session Year:</label>
-        <select
-          id="session-select"
-          className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          value={selectedSession}
-          onChange={e => setSelectedSession(e.target.value)}
-        >
-          {sessionYears.map((session) => (
-            <option key={session} value={session}>{session}</option>
-          ))}
-        </select>
-      </div>
-      {/* Admin Safety Header */}
-      {/* <div className="bg-slate-900 rounded-[40px] p-10 text-white shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12">
-          <Database size={200} />
-        </div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-          <div className="max-w-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="px-3 py-1 bg-amber-500/20 border border-amber-400/30 rounded-full text-[10px] font-black uppercase tracking-widest text-amber-300 flex items-center gap-1.5">
-                <ShieldAlert size={12} /> Critical System Path
-              </span>
-              <span className="w-1 h-1 rounded-full bg-slate-500"></span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Administrator Exclusive</span>
-            </div>
-            <h2 className="text-4xl font-black tracking-tight mb-2">Central Data Ingestion Hub</h2>
-            <p className="text-slate-400 font-medium leading-relaxed">
-              Batch process global revenue data, master configurations, and project portfolio metadata. 
-              Ensure Excel templates align with the <span className="text-blue-400 underline cursor-pointer">Mindteck V4 Schema</span>.
-            </p>
-          </div>
-          <button className="flex items-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shrink-0">
-            <Download size={16} /> Get Template Pack (.ZIP)
-          </button>
-        </div>
-      </div> */}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Header & Controls */}
+      <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-3">
+           <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+              <Database size={18} />
+           </div>
+           <div>
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">Data Ingestion Hub</h2>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Central Repository Control</p>
+           </div>
+        </div>
+        
+        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Session</span>
+           <div className="h-3 w-px bg-slate-200"></div>
+           <select
+             className="bg-transparent text-xs font-black text-slate-900 focus:outline-none cursor-pointer uppercase tracking-tight"
+             value={selectedSession}
+             onChange={e => setSelectedSession(e.target.value)}
+           >
+             {sessionYears.map((session) => (
+               <option key={session} value={session}>FY {session}</option>
+             ))}
+           </select>
+           <ChevronDown size={12} className="text-slate-400" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Main Upload Card */}
         <UploadCard 
           id="master"
-          title="Upload Master Data"
-          description=""
-          icon={<FileSpreadsheet className="text-blue-500" />}
+          title="Master Data Source"
+          description="Primary system of record for Revenue, Cost Center allocation, and Employee mapping."
+          icon={<FileSpreadsheet className="text-blue-500" strokeWidth={1.5} />}
           state={states.master}
           onFileSelect={(file) => handleFileSelect('master', file)}
           onCancel={() => cancelUpload('master')}
-          fields={[]}
+          fields={['Entity', 'Resource ID', 'Bill Rate', 'Revenue Model']}
+          color="blue"
         />
 
-        {/* <UploadCard 
-          id="financial"
-          title="Financial Batch Sync"
-          description="Bulk update Forecasts, Actuals, and Budgets across all active cost centers."
-          icon={<FileSpreadsheet className="text-emerald-500" />}
-          state={states.financial}
-          onFileSelect={(file) => handleFileSelect('financial', file)}
-          onCancel={() => cancelUpload('financial')}
-          fields={['Monthly Projections', 'Budget Allotments', 'Actual Revenue']}
-        />
-
-        <UploadCard 
-          id="projects"
-          title="Project Portfolio Sync"
-          description="Create or update high-level project metadata, BDMs, and Practice Heads."
-          icon={<Briefcase className="text-indigo-500" />}
-          state={states.projects}
-          onFileSelect={(file) => handleFileSelect('projects', file)}
-          onCancel={() => cancelUpload('projects')}
-          fields={['Project Name', 'Customer Master', 'Deal Type Registry']}
-        /> */}
+        {/* Placeholder Cards for Future Impl - Visual Consistency */}
+        <div className="lg:col-span-2 bg-slate-50 border border-slate-200 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center opacity-60">
+           <Briefcase size={24} className="text-slate-300 mb-2" />
+           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Portfolio Sync Module</h3>
+           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Coming in v4.3 Update</p>
+        </div>
       </div>
 
-      {/* Audit Log / History Preview */}
-      <div className="bg-white rounded-[40px] border border-slate-200 shadow-sm p-10 overflow-hidden">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">Recent Execution Logs</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">System Health Status: Optimized</p>
-          </div>
-          <button className="p-2 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-200">
-            <Info size={18} className="text-slate-400" />
-          </button>
+      {/* Audit Log */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[300px]">
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+          <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+            <Info size={12} className="text-blue-500" /> System Audit Logs
+          </h3>
+          <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase tracking-widest">Service Operational</span>
         </div>
 
-        <div className="space-y-4">
+        <div className="overflow-auto p-2 space-y-2">
           <LogEntry 
             action="Financial Batch Update" 
-            timestamp="Today, 09:42 AM" 
+            timestamp="Today, 09:42" 
             status="Completed" 
             records={1240} 
             user="Admin Executive"
           />
           <LogEntry 
             action="Master Location Patch" 
-            timestamp="Yesterday, 04:15 PM" 
+            timestamp="Yesterday, 16:15" 
             status="Completed" 
             records={12} 
             user="System Automation"
           />
           <LogEntry 
             action="Portfolio Metadata Sync" 
-            timestamp="Nov 12, 11:20 AM" 
+            timestamp="Nov 12, 11:20" 
             status="Warning" 
             records={450} 
             user="Admin Executive"
-            message="24 records skipped due to missing Customer ID"
+            message="24 records skipped: ID Missing"
           />
         </div>
       </div>
@@ -321,20 +330,12 @@ interface UploadCardProps {
   onFileSelect: (file: File) => void;
   onCancel: () => void;
   fields: string[];
+  color?: string;
 }
 
-const UploadCard: React.FC<UploadCardProps> = ({ id, title, description, icon, state, onFileSelect, onCancel, fields }) => {
+const UploadCard: React.FC<UploadCardProps> = ({ id, title, description, icon, state, onFileSelect, onCancel, fields, color = 'blue' }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -343,154 +344,135 @@ const UploadCard: React.FC<UploadCardProps> = ({ id, title, description, icon, s
     if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
       onFileSelect(file);
     } else {
-      alert("Please upload a valid Excel file (.xlsx or .xls)");
+      alert("Invalid format");
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) onFileSelect(file);
+    if (e.target.files?.[0]) onFileSelect(e.target.files[0]);
   };
 
   return (
-    <div className="bg-white p-8 rounded-4xl  border border-slate-200 shadow-sm hover:shadow-xl transition-all flex flex-col h-full group">
-      <div className="flex justify-between items-start mb-6">
-        <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-slate-900 group-hover:text-white transition-all">
-          {icon}
+    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all flex flex-col h-full group relative overflow-hidden">
+      <div className="flex justify-between items-start mb-3 z-10 relative">
+        <div className="flex items-center gap-3">
+           <div className={`p-2.5 rounded-lg border bg-white shadow-sm text-slate-600 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 transition-colors`}>
+             {icon}
+           </div>
+           <div>
+             <h3 className="text-sm font-black text-slate-900 tracking-tight">{title}</h3>
+             <StatusBadge status={state.status} />
+           </div>
         </div>
-        <StatusBadge status={state.status} />
       </div>
 
-      <h3 className="text-xl font-black text-slate-900 mb-2">{title}</h3>
-      <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">{description}</p>
+      <p className="text-[10px] text-slate-400 font-medium leading-relaxed mb-4 min-h-[2.5em]">{description}</p>
 
-      <div className="flex-1 space-y-6">
+      <div className="flex-1 flex flex-col gap-3">
         {state.status === 'idle' ? (
           <div 
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-              isDragging ? 'bg-blue-50 border-blue-400' : 'bg-slate-50 border-slate-200 hover:border-blue-300'
+            className={`border border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all h-32 ${
+              isDragging ? 'bg-blue-50/50 border-blue-400' : 'bg-slate-50/50 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
             }`}
           >
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleInputChange} 
-              accept=".xlsx,.xls" 
-              className="hidden" 
-            />
-            <div className="p-4 bg-white rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform">
-              <FileUp size={24} className="text-blue-500" />
+            <input type="file" ref={fileInputRef} onChange={handleInputChange} accept=".xlsx,.xls" className="hidden" />
+            <div className="mb-2 p-2 bg-white rounded-full shadow-sm text-slate-400 group-hover:text-blue-500 transition-colors">
+               <FileUp size={16} />
             </div>
-            <p className="text-xs font-black uppercase tracking-widest text-slate-900 mb-1">Click to Upload</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">or drag & drop Excel file</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Click to Upload</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">XLSX / XLS Formats</p>
           </div>
         ) : (
-          <div className="p-6 bg-slate-50 border border-slate-100 rounded-[32px] relative overflow-hidden">
-             <div className="flex items-center gap-4 mb-4">
-                <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center border border-slate-100 shadow-sm text-blue-500">
-                  <FileText size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-black text-slate-900 truncate">{state.file?.name}</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{(state.file?.size || 0) / 1024 > 1024 ? `${((state.file?.size || 0) / 1048576).toFixed(1)} MB` : `${((state.file?.size || 0) / 1024).toFixed(1)} KB`}</p>
+          <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl relative overflow-hidden h-32 flex flex-col justify-center">
+             <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 overflow-hidden">
+                   <FileText size={14} className="text-slate-400 shrink-0" />
+                   <span className="text-[10px] font-bold text-slate-700 truncate">{state.file?.name}</span>
                 </div>
                 {state.status !== 'processing' && state.status !== 'success' && (
-                  <button onClick={onCancel} className="p-2 hover:bg-slate-200 rounded-full transition-all text-slate-400">
-                    <X size={16} />
-                  </button>
+                  <button onClick={onCancel} className="text-slate-400 hover:text-red-500 transition-colors"><X size={12} /></button>
                 )}
              </div>
 
-             <div className="space-y-2">
-                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                   <span className={state.status === 'success' ? 'text-emerald-600' : 'text-blue-600'}>
-                     {state.message}
-                   </span>
-                   {state.status === 'uploading' && <span>{Math.round(state.progress)}%</span>}
+             <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest">
+                   <span className={state.status === 'success' ? 'text-emerald-600' : 'text-blue-600'}>{state.message}</span>
+                   {state.status === 'uploading' && <span>{state.progress}%</span>}
                 </div>
-                <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                   <div 
-                    className={`h-full transition-all duration-300 ${state.status === 'success' ? 'bg-emerald-500' : 'bg-blue-500'}`} 
-                    style={{ width: `${state.progress}%` }}
-                   ></div>
+                <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden">
+                   <div className={`h-full transition-all duration-300 ${state.status === 'success' ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: `${state.progress}%` }}></div>
                 </div>
              </div>
-
+             
              {state.status === 'processing' && (
-                <div className="mt-4 flex items-center gap-2 animate-pulse">
-                   <Loader2 size={12} className="animate-spin text-blue-500" />
-                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Core Engine Active</span>
+                <div className="mt-2 flex items-center justify-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase animate-pulse">
+                   <Loader2 size={10} className="animate-spin" /> Processing...
                 </div>
              )}
           </div>
         )}
 
-        <div className="space-y-3">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Required Template Headers</p>
-          <div className="flex flex-wrap gap-2">
-            {fields.map((f: string) => (
-              <span key={f} className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-600">{f}</span>
+        <div className="pt-3 border-t border-slate-50">
+          <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Required Fields</p>
+          <div className="flex flex-wrap gap-1">
+            {fields.map((f) => (
+              <span key={f} className="px-1.5 py-0.5 bg-slate-50 border border-slate-100 rounded text-[8px] font-bold text-slate-500 uppercase">{f}</span>
             ))}
           </div>
         </div>
       </div>
-      
-      {state.status === 'success' && (
-        <div className="mt-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3 animate-in zoom-in duration-300">
-          <CheckCircle2 size={18} className="text-emerald-600" />
-          <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">System synchronized with cloud storage</p>
-        </div>
-      )}
     </div>
   );
 };
 
 const StatusBadge = ({ status }: { status: UploadStatus }) => {
   const styles = {
-    idle: 'bg-slate-50 text-slate-400 border-slate-200',
-    uploading: 'bg-blue-50 text-blue-600 border-blue-100',
-    processing: 'bg-indigo-50 text-indigo-600 border-indigo-100',
-    success: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    error: 'bg-red-50 text-red-600 border-red-100'
+    idle: 'hidden',
+    uploading: 'text-blue-500 bg-blue-50 border-blue-100',
+    processing: 'text-indigo-500 bg-indigo-50 border-indigo-100',
+    success: 'text-emerald-500 bg-emerald-50 border-emerald-100',
+    error: 'text-red-500 bg-red-50 border-red-100'
   };
 
+  if(status === 'idle') return null;
+
   return (
-    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase border tracking-widest ${styles[status]}`}>
+    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border tracking-widest ${styles[status]}`}>
       {status}
     </span>
   );
 };
 
 const LogEntry = ({ action, timestamp, status, records, user, message }: any) => (
-  <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-slate-50 rounded-3xl hover:bg-white hover:shadow-lg hover:shadow-slate-200/40 transition-all border border-transparent hover:border-slate-200 group">
-    <div className="flex items-center gap-4">
-      <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white ${status === 'Warning' ? 'bg-amber-500' : 'bg-slate-900'}`}>
-        <FileSpreadsheet size={18} />
+  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-lg hover:border-blue-200 transition-all group">
+    <div className="flex items-center gap-3">
+      <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm ${status === 'Warning' ? 'bg-amber-500' : 'bg-slate-800'}`}>
+        <FileSpreadsheet size={14} />
       </div>
       <div>
-        <h4 className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-all">{action}</h4>
-        <div className="flex items-center gap-3 mt-1">
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{timestamp}</p>
-          <span className="h-1 w-1 rounded-full bg-slate-300"></span>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">User: {user}</p>
+        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-wide group-hover:text-blue-600 transition-colors">{action}</h4>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{timestamp}</span>
+          <span className="h-0.5 w-0.5 rounded-full bg-slate-300"></span>
+          <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{user}</span>
         </div>
-        {message && <p className="text-[10px] text-amber-600 font-black uppercase mt-1.5 flex items-center gap-1"><AlertCircle size={10}/> {message}</p>}
+        {message && <p className="text-[8px] text-amber-600 font-bold uppercase mt-0.5 flex items-center gap-1"><AlertCircle size={8}/> {message}</p>}
       </div>
     </div>
     
-    <div className="flex items-center gap-8 mt-4 md:mt-0">
-      <div className="text-right">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Records Processed</p>
-        <p className="text-lg font-black text-slate-900">{records.toLocaleString()}</p>
+    <div className="flex items-center gap-4 text-right">
+      <div>
+        <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Records</p>
+        <p className="text-xs font-black text-slate-700">{records.toLocaleString()}</p>
       </div>
-      <div className={`h-10 w-10 rounded-full flex items-center justify-center border ${
+      <div className={`hidden sm:flex h-6 w-6 rounded-full items-center justify-center border ${
         status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-amber-50 border-amber-100 text-amber-600'
       }`}>
-        {status === 'Completed' ? <CheckCircle2 size={18} /> : <ArrowRight size={18} />}
+        {status === 'Completed' ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
       </div>
     </div>
   </div>
