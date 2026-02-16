@@ -1,15 +1,58 @@
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   ChevronDown, ChevronRight, MoreHorizontal, Filter, 
-  Download, Search, Plus, ExternalLink, User, Activity
+  Search, Plus, ExternalLink, User, Activity
 } from 'lucide-react';
-import { MOCK_DEALS } from '@/constants';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/api/client';
+
+type DealSummary = {
+  id: number;
+  projectName: string;
+  customer: string;
+  region: string;
+  projectType: string;
+  dealType: string;
+  businessType: string;
+  status: string;
+  bdm: string;
+  fyForecast: number;
+  fyActual: number;
+  fyBudget: number;
+};
 
 const DealManagement = () => {
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
-  const toggleRow = (id: string) => {
+  const getSessionYears = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
+    return [
+      `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
+      `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
+      `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
+      `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
+    ];
+  };
+
+  const sessionYears = useMemo(() => getSessionYears(), []);
+  const [sessionYear, setSessionYear] = useState(sessionYears[2]);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['projects-summary', sessionYear],
+    queryFn: async () => {
+      const response = await apiClient.get<DealSummary[]>('/projects/summary', {
+        params: { financialYear: sessionYear },
+      });
+      return response.data;
+    },
+  });
+
+  const deals = useMemo(() => data ?? [], [data]);
+
+  const toggleRow = (id: number) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(id)) newExpanded.delete(id);
     else newExpanded.add(id);
@@ -31,9 +74,21 @@ const DealManagement = () => {
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Portfolio Governance</h2>
-          <p className="text-slate-500 text-sm font-medium">Tracking {MOCK_DEALS.length} major deals across 5 global regions</p>
+          <p className="text-slate-500 text-sm font-medium">Tracking {deals.length} major deals across 5 global regions</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FY</label>
+            <select
+              className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 bg-white"
+              value={sessionYear}
+              onChange={(event) => setSessionYear(event.target.value)}
+            >
+              {sessionYears.map((session) => (
+                <option key={session} value={session}>{session}</option>
+              ))}
+            </select>
+          </div>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
@@ -67,7 +122,21 @@ const DealManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {MOCK_DEALS.map((deal) => {
+              {isLoading && (
+                <tr>
+                  <td colSpan={8} className="px-8 py-10 text-center text-xs font-bold text-slate-400">
+                    Loading projects...
+                  </td>
+                </tr>
+              )}
+              {isError && (
+                <tr>
+                  <td colSpan={8} className="px-8 py-10 text-center text-xs font-bold text-red-500">
+                    Failed to load projects.
+                  </td>
+                </tr>
+              )}
+              {!isLoading && !isError && deals.map((deal) => {
                 const isExpanded = expandedRows.has(deal.id);
                 return (
                   <React.Fragment key={deal.id}>
@@ -92,7 +161,7 @@ const DealManagement = () => {
                             {deal.region}
                           </span>
                           <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-                            <User size={12} /> {deal.bdm}
+                            <User size={12} /> {deal.bdm || 'Unassigned'}
                           </span>
                         </div>
                       </td>
@@ -102,12 +171,12 @@ const DealManagement = () => {
                       <td className="px-6 py-6 text-right text-slate-500 font-bold text-sm">
                         ${(deal.fyBudget / 1000).toFixed(1)}K
                       </td>
-                      <td className={`px-6 py-6 text-right font-extrabold text-sm ${deal.variance >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                        {deal.variance >= 0 ? '+' : ''}${(deal.variance / 1000).toFixed(1)}K
+                      <td className={`px-6 py-6 text-right font-extrabold text-sm ${deal.fyForecast - deal.fyBudget >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {deal.fyForecast - deal.fyBudget >= 0 ? '+' : ''}${((deal.fyForecast - deal.fyBudget) / 1000).toFixed(1)}K
                       </td>
                       <td className="px-6 py-6">
-                        <span className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border uppercase tracking-widest ${getStatusStyle(deal.status)}`}>
-                          {deal.status}
+                        <span className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border uppercase tracking-widest ${getStatusStyle(deal.status || 'In Progress')}`}>
+                          {deal.status || 'In Progress'}
                         </span>
                       </td>
                       <td className="px-8 py-6 text-center">
@@ -134,7 +203,7 @@ const DealManagement = () => {
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                              {['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => {
+                              {['Q1', 'Q2', 'Q3', 'Q4'].map((q) => {
                                 const qVal = Math.floor(deal.fyForecast / 4);
                                 return (
                                   <div key={q} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -170,7 +239,7 @@ const DealManagement = () => {
           </table>
         </div>
         <div className="px-8 py-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Showing {MOCK_DEALS.length} Priority Project Streams</p>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Showing {deals.length} Priority Project Streams</p>
           <div className="flex gap-2">
             <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400 cursor-not-allowed">Previous</button>
             <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:bg-blue-50 transition-all shadow-sm">Next</button>

@@ -22,6 +22,7 @@ export const projects = pgTable("projects", {
   classification: text("classification").notNull(), // RoW or US
   projectType: text("project_type").notNull(), // PS or MS
   projectCustomerType: text("project_customer_type").notNull(), // EE, EN, NN
+  status: text("status").default("In Progress"),
 
   regionId: integer("region_id").references(() => regions.id), 
   entityId: integer("entity_id").references(() => entities.id),
@@ -58,6 +59,7 @@ export const ProjectCreateZ = z.object({
   businessTypeId: z.number().int().optional(),
   projectType: z.enum(["PS", "MS"]),
   projectCustomerType: z.enum(["EE", "EN" , "NN"]),
+  status: z.string().optional(),
 
   practiceHeadId: z.number().int().optional(),
   bdmId: z.number().int().optional(),

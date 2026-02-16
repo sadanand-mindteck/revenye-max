@@ -1,27 +1,64 @@
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   Legend, ComposedChart, Line, Area
 } from 'recharts';
 import { TrendingUp, Filter, Download } from 'lucide-react';
-
-const analyticsData = [
-  { period: '2023-H1', revenue: 4200, profit: 1200, margin: 28 },
-  { period: '2023-H2', revenue: 5800, profit: 1800, margin: 31 },
-  { period: '2024-H1', revenue: 6400, profit: 2100, margin: 32 },
-  { period: '2024-H2', revenue: 7900, profit: 2800, margin: 35 },
-];
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/api/client';
 
 const Analytics = () => {
+  const getSessionYears = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
+    return [
+      `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
+      `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
+      `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
+      `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
+    ];
+  };
+
+  const sessionYears = useMemo(() => getSessionYears(), []);
+  const [sessionYear, setSessionYear] = useState(sessionYears[2]);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['analytics-summary', sessionYear],
+    queryFn: async () => {
+      const response = await apiClient.get<Array<{ period: string; revenue: number; profit: number; margin: number }>>(
+        '/analytics/summary',
+        { params: { financialYear: sessionYear } },
+      );
+      return response.data;
+    },
+  });
+
+  const analyticsData = useMemo(() => data ?? [], [data]);
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-700">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Financial Intelligence</h2>
           <p className="text-slate-500 text-sm font-medium">Advanced trend modeling and predictive margin analysis.</p>
+          {isLoading && <p className="text-xs font-bold text-slate-400 mt-2">Loading analytics...</p>}
+          {isError && <p className="text-xs font-bold text-red-500 mt-2">Failed to load analytics.</p>}
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FY</label>
+            <select
+              className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 bg-white"
+              value={sessionYear}
+              onChange={(event) => setSessionYear(event.target.value)}
+            >
+              {sessionYears.map((session) => (
+                <option key={session} value={session}>{session}</option>
+              ))}
+            </select>
+          </div>
           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-sm transition-all">
             <Filter size={16} /> Filters
           </button>

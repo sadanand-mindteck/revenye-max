@@ -26,6 +26,8 @@ import employeesRoutes from "./routes/employees.route";
 import projectsRoutes from "./routes/projects.route";
 import rolesRoutes from "./routes/roles.route";
 import employeeRolesRoutes from "./routes/employeeRoles.route";
+import analyticsRoutes from "./routes/analytics.route";
+import dashboardRoutes from "./routes/dashboard.route";
 import { createExcelUploadRoute } from "./routes/excelUpload.routes";
 
 
@@ -80,6 +82,8 @@ async function start() {
   server.register(resourcesRoutes, { prefix: "/api/resources" });
   server.register(employeesRoutes, { prefix: "/api/employees" });
   server.register(projectsRoutes, { prefix: "/api/projects" });
+  server.register(analyticsRoutes, { prefix: "/api/analytics" });
+  server.register(dashboardRoutes, { prefix: "/api/dashboard" });
   server.register(rolesRoutes, { prefix: "/api/roles" });
   server.register(employeeRolesRoutes, { prefix: "/api/employee-roles" });
   server.register(createExcelUploadRoute, { prefix: "/api/data" });

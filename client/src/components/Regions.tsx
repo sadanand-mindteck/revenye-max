@@ -1,10 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   MapPin, Users, Globe, ChevronRight, Zap, ArrowLeft, 
   Layers, Briefcase, TrendingUp, DollarSign, Activity, ChevronLeft
 } from 'lucide-react';
-import { MOCK_DEALS } from '@/constants';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/api/client';
 
 type ViewLevel = 'global' | 'region' | 'bu' | 'bdm';
 
@@ -13,41 +14,72 @@ const Regions = () => {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedBU, setSelectedBU] = useState<string | null>(null);
 
+  const getSessionYears = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
+    return [
+      `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
+      `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
+      `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
+      `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
+    ];
+  };
+
+  const sessionYears = useMemo(() => getSessionYears(), []);
+  const [sessionYear, setSessionYear] = useState(sessionYears[2]);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['regions-summary', sessionYear],
+    queryFn: async () => {
+      const response = await apiClient.get<Array<{ 
+        projectId: number;
+        region: string;
+        buHead: string;
+        bdm: string;
+        fyForecast: number;
+      }>>('/regions/summary', {
+        params: { financialYear: sessionYear },
+      });
+      return response.data;
+    },
+  });
+
+  const deals = useMemo(() => data ?? [], [data]);
+
   // Derived Data for Regions Grid
   const regionsSummary = useMemo(() => {
-    const summary: Record<string, { rev: number; deals: number; lead: string }> = {
-      'North America': { rev: 0, deals: 0, lead: 'Sarah Miller' },
-      'Europe': { rev: 0, deals: 0, lead: 'Marcus Brandt' },
-      'APAC': { rev: 0, deals: 0, lead: 'Li Wei' },
-      'LATAM': { rev: 0, deals: 0, lead: 'Roberto Silva' },
-    };
+    const summary: Record<string, { rev: number; deals: number; lead: string }> = {};
 
-    MOCK_DEALS.forEach(deal => {
-      if (summary[deal.region]) {
-        summary[deal.region].rev += deal.fyForecast;
-        summary[deal.region].deals += 1;
+    deals.forEach((deal) => {
+      const regionName = deal.region || 'Unassigned';
+      if (!summary[regionName]) {
+        summary[regionName] = { rev: 0, deals: 0, lead: deal.buHead || 'Unassigned' };
       }
+      summary[regionName].rev += deal.fyForecast;
+      summary[regionName].deals += 1;
     });
 
     return Object.entries(summary).map(([name, data]) => ({
       name,
       ...data,
-      health: 80 + Math.floor(Math.random() * 20) // Simulated health score
+      health: 80 + Math.floor(Math.random() * 20),
     }));
-  }, []);
+  }, [deals]);
 
   // Derived BUs for selected region
   const busInRegion = useMemo(() => {
     if (!selectedRegion) return [];
-    const deals = MOCK_DEALS.filter(d => d.region === selectedRegion);
+    const filtered = deals.filter((d) => d.region === selectedRegion);
     const bus: Record<string, { rev: number; deals: number; bdmCount: number; status: string }> = {};
     
-    deals.forEach(d => {
-      if (!bus[d.buHead]) {
-        bus[d.buHead] = { rev: 0, deals: 0, bdmCount: 0, status: 'On Track' };
+    filtered.forEach(d => {
+      const buName = d.buHead || 'Unassigned';
+      if (!bus[buName]) {
+        bus[buName] = { rev: 0, deals: 0, bdmCount: 0, status: 'On Track' };
       }
-      bus[d.buHead].rev += d.fyForecast;
-      bus[d.buHead].deals += 1;
+      bus[buName].rev += d.fyForecast;
+      bus[buName].deals += 1;
     });
 
     return Object.entries(bus).map(([name, data]) => ({ name, ...data }));
@@ -56,15 +88,16 @@ const Regions = () => {
   // Derived BDMs for selected BU
   const bdmsInBU = useMemo(() => {
     if (!selectedBU || !selectedRegion) return [];
-    const deals = MOCK_DEALS.filter(d => d.region === selectedRegion && d.buHead === selectedBU);
+    const filtered = deals.filter((d) => d.region === selectedRegion && (d.buHead || 'Unassigned') === selectedBU);
     const bdms: Record<string, { rev: number; deals: number; winRate: string }> = {};
 
-    deals.forEach(d => {
-      if (!bdms[d.bdm]) {
-        bdms[d.bdm] = { rev: 0, deals: 0, winRate: '68%' };
+    filtered.forEach(d => {
+      const bdmName = d.bdm || 'Unassigned';
+      if (!bdms[bdmName]) {
+        bdms[bdmName] = { rev: 0, deals: 0, winRate: '68%' };
       }
-      bdms[d.bdm].rev += d.fyForecast;
-      bdms[d.bdm].deals += 1;
+      bdms[bdmName].rev += d.fyForecast;
+      bdms[bdmName].deals += 1;
     });
 
     return Object.entries(bdms).map(([name, data]) => ({ name, ...data }));
@@ -138,20 +171,38 @@ const Regions = () => {
           <div className="hidden lg:flex items-center gap-6 p-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
             <div className="text-center px-4">
                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Zones</p>
-               <p className="text-xl font-black text-slate-900">4</p>
+               <p className="text-xl font-black text-slate-900">{regionsSummary.length}</p>
             </div>
             <div className="h-8 w-px bg-slate-100"></div>
             <div className="text-center px-4">
                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Deals</p>
-               <p className="text-xl font-black text-slate-900">{MOCK_DEALS.length}</p>
+               <p className="text-xl font-black text-slate-900">{deals.length}</p>
             </div>
           </div>
         )}
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FY</label>
+          <select
+            className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 bg-white"
+            value={sessionYear}
+            onChange={(event) => setSessionYear(event.target.value)}
+          >
+            {sessionYears.map((session) => (
+              <option key={session} value={session}>{session}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Level 0: Global View (Regions) */}
       {viewLevel === 'global' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {isLoading && (
+            <div className="col-span-full text-center text-xs font-bold text-slate-400">Loading regions...</div>
+          )}
+          {isError && (
+            <div className="col-span-full text-center text-xs font-bold text-red-500">Failed to load regions.</div>
+          )}
           {regionsSummary.map((reg, i) => (
             <div 
               key={i} 

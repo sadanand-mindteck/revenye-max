@@ -1,8 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Save, Calculator, TrendingUp, PieChart, ShieldCheck, Search, Upload, FileText, Info, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
-import { User, UserRole, Deal } from '@/types';
-import { MOCK_DEALS } from '@/constants';
+import { User, UserRole } from '@/types';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/api/client';
 
 interface DealEntryProps {
   user: User;
@@ -10,14 +11,80 @@ interface DealEntryProps {
 
 const DealEntry: React.FC<DealEntryProps> = ({ user }) => {
   const [activeQuarter, setActiveQuarter] = useState('Q1');
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(MOCK_DEALS[0].id);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
   const isEditor = user.role === UserRole.BDM || user.role === UserRole.PRACTICE_HEAD || user.role === UserRole.ADMIN;
 
+  const getSessionYears = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
+    return [
+      `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
+      `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
+      `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
+      `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
+    ];
+  };
+
+  const sessionYears = useMemo(() => getSessionYears(), []);
+  const [sessionYear, setSessionYear] = useState(sessionYears[2]);
+
+  const { data: projectOptions } = useQuery({
+    queryKey: ['entry-options'],
+    queryFn: async () => {
+      const response = await apiClient.get<Array<{ id: number; projectName: string; customer: string; region: string; bdm: string }>>(
+        '/projects/entry-options',
+      );
+      return response.data;
+    },
+  });
+
+  useEffect(() => {
+    if (!selectedProjectId && projectOptions && projectOptions.length > 0) {
+      setSelectedProjectId(String(projectOptions[0].id));
+    }
+  }, [selectedProjectId, projectOptions]);
+
+  const { data: entryData } = useQuery({
+    queryKey: ['project-entry', selectedProjectId, sessionYear],
+    enabled: Boolean(selectedProjectId),
+    queryFn: async () => {
+      const response = await apiClient.get<{ 
+        projectName: string;
+        customer: string;
+        region: string;
+        buHead: string;
+        projectType: string;
+        dealType: string;
+        businessType: string;
+        practiceHead: string;
+        bdm: string;
+        note: string;
+        monthly: Record<string, { fct: number; act: number; bgt: number }>;
+      }>(`/projects/${selectedProjectId}/entry`, {
+        params: { financialYear: sessionYear },
+      });
+      return response.data;
+    },
+  });
+
+  const saveEntryMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedProjectId) return;
+      await apiClient.put(`/projects/${selectedProjectId}/entry`, {
+        financialYear: sessionYear,
+        note: metadata.note,
+        monthly: financials,
+      });
+    },
+  });
+
   const currentDeal = useMemo(() => {
-    return MOCK_DEALS.find(d => d.id === selectedProjectId) || MOCK_DEALS[0];
-  }, [selectedProjectId]);
+    const found = projectOptions?.find((deal) => String(deal.id) === selectedProjectId);
+    return found ?? { id: 0, projectName: '', customer: '', region: '', bdm: '' };
+  }, [projectOptions, selectedProjectId]);
 
   // Extended metadata for the current deal
   const [metadata, setMetadata] = useState({
@@ -40,6 +107,23 @@ const DealEntry: React.FC<DealEntryProps> = ({ user }) => {
     'August': { fct: 200000, act: 0, bgt: 180000 },
     'September': { fct: 220000, act: 0, bgt: 200000 },
   });
+
+  useEffect(() => {
+    if (!entryData) return;
+    setMetadata((prev) => ({
+      ...prev,
+      buHead: entryData.buHead || '',
+      projectType: entryData.projectType || '',
+      dealType: entryData.dealType || '',
+      businessType: entryData.businessType || '',
+      practiceHead: entryData.practiceHead || '',
+      note: entryData.note || '',
+    }));
+    setFinancials((prev) => ({
+      ...prev,
+      ...entryData.monthly,
+    }));
+  }, [entryData]);
 
   const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
   const monthsByQuarter: Record<string, string[]> = {
@@ -84,7 +168,19 @@ const DealEntry: React.FC<DealEntryProps> = ({ user }) => {
     <div className="max-w-7xl mx-auto space-y-8 animate-in slide-in-from-bottom-6 duration-500 pb-32">
       {/* Selection & Actions Bar */}
       <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-4 w-full xl:w-auto">
+        <div className="flex items-center gap-3 w-full xl:w-auto">
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FY</label>
+            <select
+              className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 bg-white"
+              value={sessionYear}
+              onChange={(event) => setSessionYear(event.target.value)}
+            >
+              {sessionYears.map((session) => (
+                <option key={session} value={session}>{session}</option>
+              ))}
+            </select>
+          </div>
           <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-500/20 shrink-0">
             <FileText size={20} />
           </div>
@@ -96,8 +192,11 @@ const DealEntry: React.FC<DealEntryProps> = ({ user }) => {
                 onChange={(e) => setSelectedProjectId(e.target.value)}
                 className="w-full xl:w-[320px] bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 appearance-none focus:outline-none focus:ring-4 focus:ring-blue-500/10"
               >
-                {MOCK_DEALS.map(d => (
-                  <option key={d.id} value={d.id}>{d.projectName} ({d.customer})</option>
+                {projectOptions?.length === 0 && (
+                  <option value="">No projects available</option>
+                )}
+                {projectOptions?.map((deal) => (
+                  <option key={deal.id} value={deal.id}>{deal.projectName} ({deal.customer})</option>
                 ))}
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -115,12 +214,14 @@ const DealEntry: React.FC<DealEntryProps> = ({ user }) => {
             </button>
           )}
           <button 
-            disabled={!isEditor}
+            disabled={!isEditor || saveEntryMutation.isPending}
+            onClick={() => saveEntryMutation.mutate()}
             className={`flex-1 xl:flex-none flex items-center justify-center gap-2 px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${
               isEditor ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-500/20' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
             }`}
           >
-            <Save size={18} /> {isEditor ? 'Commit Changes' : 'Viewing Only'}
+            <Save size={18} />
+            {isEditor ? (saveEntryMutation.isPending ? 'Saving...' : 'Commit Changes') : 'Viewing Only'}
           </button>
         </div>
       </div>

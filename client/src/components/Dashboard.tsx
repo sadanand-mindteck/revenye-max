@@ -1,24 +1,18 @@
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, Cell, AreaChart, Area, PieChart, Pie, RadarChart, PolarGrid, PolarAngleAxis, Radar
+  Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, Radar
 } from 'recharts';
 import { 
   ArrowUpRight, ArrowDownRight, Target, Activity, DollarSign, Wallet, Globe, 
   Users, Layers, Zap, Briefcase, TrendingUp, Search, MessageSquare, Clock, Filter
 } from 'lucide-react';
 import { User, UserRole } from '../types';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/api/client';
 
 // Specialized Data for different roles
-const trendData = [
-  { name: 'Apr', fct: 850, act: 820, bgt: 800 },
-  { name: 'May', fct: 940, act: 910, bgt: 800 },
-  { name: 'Jun', fct: 1100, act: 1250, bgt: 900 },
-  { name: 'Jul', fct: 1050, act: 1080, bgt: 900 },
-  { name: 'Aug', fct: 1200, act: 1150, bgt: 1000 },
-  { name: 'Sep', fct: 1350, act: 1420, bgt: 1000 },
-];
 
 const buPerformance = [
   { name: 'Cloud & Infrastructure', revenue: 4500, growth: 12.5, status: 'On Track' },
@@ -52,6 +46,54 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const isBDMView = user.role === UserRole.BDM;
   const isPracticeView = user.role === UserRole.PRACTICE_HEAD;
 
+  const getSessionYears = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
+    return [
+      `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
+      `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
+      `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
+      `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
+    ];
+  };
+
+  const sessionYears = useMemo(() => getSessionYears(), []);
+  const [sessionYear, setSessionYear] = useState(sessionYears[2]);
+
+  const { data: trendData, isLoading, isError } = useQuery({
+    queryKey: ['dashboard-trends', sessionYear],
+    queryFn: async () => {
+      const response = await apiClient.get<Array<{ name: string; fct: number; act: number; bgt: number }>>(
+        '/dashboard/trends',
+        { params: { financialYear: sessionYear } },
+      );
+      return response.data;
+    },
+  });
+
+  const { data: summaryData, isLoading: isSummaryLoading, isError: isSummaryError } = useQuery({
+    queryKey: ['dashboard-summary', sessionYear],
+    queryFn: async () => {
+      const response = await apiClient.get<{ 
+        totalRevenue: number;
+        operatingMargin: number;
+        totalHeadcount: number;
+        pipelineValue: number;
+      }>(
+        '/dashboard/summary',
+        { params: { financialYear: sessionYear, role: user.role, userId: Number(user.id) } },
+      );
+      return response.data;
+    },
+  });
+
+  const totalRevenue = summaryData?.totalRevenue ?? 0;
+  const operatingMargin = summaryData?.operatingMargin ?? 0;
+  const totalHeadcount = summaryData?.totalHeadcount ?? 0;
+  const pipelineValue = summaryData?.pipelineValue ?? 0;
+  const summaryTrend = isSummaryLoading ? 'Loading' : isSummaryError ? 'Error' : 'Live';
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       {/* Dynamic Role-Based Welcome Banner */}
@@ -84,24 +126,24 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {isGlobalView && (
           <>
-            <KPICard title="Total FY Revenue" value="$24.8M" trend="+8.4%" icon={<DollarSign size={22} />} color="blue" />
-            <KPICard title="Operating Margin" value="34.2%" trend="+2.1%" icon={<Activity size={22} />} color="emerald" />
-            <KPICard title="Total Headcount" value="1,240" trend="+4%" icon={<Users size={22} />} color="slate" />
-            <KPICard title="Pipeline Value" value="$142M" trend="+12%" icon={<TrendingUp size={22} />} color="indigo" />
+            <KPICard title="Total FY Revenue" value={`$${(totalRevenue / 1_000_000).toFixed(1)}M`} trend={summaryTrend} icon={<DollarSign size={22} />} color="blue" />
+            <KPICard title="Operating Margin" value={`${operatingMargin.toFixed(1)}%`} trend={summaryTrend} icon={<Activity size={22} />} color="emerald" />
+            <KPICard title="Total Headcount" value={totalHeadcount.toLocaleString()} trend={summaryTrend} icon={<Users size={22} />} color="slate" />
+            <KPICard title="Pipeline Value" value={`$${(pipelineValue / 1_000_000).toFixed(1)}M`} trend={summaryTrend} icon={<TrendingUp size={22} />} color="indigo" />
           </>
         )}
         {isBDMView && (
           <>
-            <KPICard title="My Quarterly Quota" value="$450K" trend="78% Done" icon={<Target size={22} />} color="blue" />
+            <KPICard title="My FY Forecast" value={`$${(pipelineValue / 1000).toFixed(1)}K`} trend={summaryTrend} icon={<Target size={22} />} color="blue" />
             <KPICard title="Deal Velocity" value="24 Days" trend="-4 Days" icon={<Clock size={22} />} color="emerald" />
             <KPICard title="Win Rate" value="42%" trend="+5%" icon={<Activity size={22} />} color="slate" />
-            <KPICard title="Estimated Commission" value="$18.4K" trend="Pending" icon={<Wallet size={22} />} color="indigo" />
+            <KPICard title="My FY Revenue" value={`$${(totalRevenue / 1000).toFixed(1)}K`} trend={summaryTrend} icon={<Wallet size={22} />} color="indigo" />
           </>
         )}
         {isBUHView && (
           <>
-            <KPICard title="BU Revenue YTD" value="$8.4M" trend="+14%" icon={<Layers size={22} />} color="blue" />
-            <KPICard title="Utilized Budget" value="$6.2M" trend="On Track" icon={<Wallet size={22} />} color="emerald" />
+            <KPICard title="BU Revenue YTD" value={`$${(totalRevenue / 1_000_000).toFixed(1)}M`} trend={summaryTrend} icon={<Layers size={22} />} color="blue" />
+            <KPICard title="Utilized Budget" value={`$${(pipelineValue / 1_000_000).toFixed(1)}M`} trend={summaryTrend} icon={<Wallet size={22} />} color="emerald" />
             <KPICard title="Billable Hours" value="14.2K" trend="+8%" icon={<Clock size={22} />} color="slate" />
             <KPICard title="Bench Strength" value="14%" trend="-2%" icon={<Users size={22} />} color="indigo" isPositive={false} />
           </>
@@ -126,8 +168,22 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 {isPracticeView ? "Project Delivery Timeline" : "Revenue Trajectory Analysis"}
               </h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time Data Stream • FY 2024</p>
+              {isLoading && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Loading trends...</p>}
+              {isError && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-2">Failed to load trends</p>}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+               <div className="flex items-center gap-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FY</label>
+                 <select
+                   className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 bg-white"
+                   value={sessionYear}
+                   onChange={(event) => setSessionYear(event.target.value)}
+                 >
+                   {sessionYears.map((session) => (
+                     <option key={session} value={session}>{session}</option>
+                   ))}
+                 </select>
+               </div>
                <button className="p-2 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-200"><Filter size={18} /></button>
                <button className="p-2 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-200"><Search size={18} /></button>
             </div>
@@ -136,7 +192,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <div className="h-100 w-full">
             <ResponsiveContainer width="100%" height="100%">
              
-                <AreaChart data={trendData}>
+                <AreaChart data={trendData ?? []}>
                   <defs>
                     <linearGradient id="colorFct" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
