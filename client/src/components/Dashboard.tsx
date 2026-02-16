@@ -80,6 +80,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         operatingMargin: number;
         totalHeadcount: number;
         pipelineValue: number;
+        projectCount: number;
+        avgForecastPerProject: number;
       }>(
         '/dashboard/summary',
         { params: { financialYear: sessionYear, role: user.role, userId: Number(user.id) } },
@@ -92,6 +94,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const operatingMargin = summaryData?.operatingMargin ?? 0;
   const totalHeadcount = summaryData?.totalHeadcount ?? 0;
   const pipelineValue = summaryData?.pipelineValue ?? 0;
+  const projectCount = summaryData?.projectCount ?? 0;
+  const avgForecastPerProject = summaryData?.avgForecastPerProject ?? 0;
   const summaryTrend = isSummaryLoading ? 'Loading' : isSummaryError ? 'Error' : 'Live';
 
   return (
@@ -124,6 +128,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
       {/* KPI Section - Heavily Custom per Role */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {(isSummaryLoading || isSummaryError) && (
+          <div className="md:col-span-2 xl:col-span-4">
+            <div className={`rounded-2xl border px-4 py-3 text-xs font-bold ${isSummaryError ? 'border-red-200 bg-red-50 text-red-600' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+              {isSummaryError ? 'KPI summary failed to load.' : 'Loading KPI summary...'}
+            </div>
+          </div>
+        )}
         {isGlobalView && (
           <>
             <KPICard title="Total FY Revenue" value={`$${(totalRevenue / 1_000_000).toFixed(1)}M`} trend={summaryTrend} icon={<DollarSign size={22} />} color="blue" />
@@ -135,8 +146,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         {isBDMView && (
           <>
             <KPICard title="My FY Forecast" value={`$${(pipelineValue / 1000).toFixed(1)}K`} trend={summaryTrend} icon={<Target size={22} />} color="blue" />
-            <KPICard title="Deal Velocity" value="24 Days" trend="-4 Days" icon={<Clock size={22} />} color="emerald" />
-            <KPICard title="Win Rate" value="42%" trend="+5%" icon={<Activity size={22} />} color="slate" />
+            <KPICard title="Active Deals" value={projectCount.toLocaleString()} trend={summaryTrend} icon={<Clock size={22} />} color="emerald" />
+            <KPICard title="Avg Deal Size" value={`$${(avgForecastPerProject / 1000).toFixed(1)}K`} trend={summaryTrend} icon={<Activity size={22} />} color="slate" />
             <KPICard title="My FY Revenue" value={`$${(totalRevenue / 1000).toFixed(1)}K`} trend={summaryTrend} icon={<Wallet size={22} />} color="indigo" />
           </>
         )}
@@ -144,16 +155,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <>
             <KPICard title="BU Revenue YTD" value={`$${(totalRevenue / 1_000_000).toFixed(1)}M`} trend={summaryTrend} icon={<Layers size={22} />} color="blue" />
             <KPICard title="Utilized Budget" value={`$${(pipelineValue / 1_000_000).toFixed(1)}M`} trend={summaryTrend} icon={<Wallet size={22} />} color="emerald" />
-            <KPICard title="Billable Hours" value="14.2K" trend="+8%" icon={<Clock size={22} />} color="slate" />
+            <KPICard title="Active Projects" value={projectCount.toLocaleString()} trend={summaryTrend} icon={<Clock size={22} />} color="slate" />
             <KPICard title="Bench Strength" value="14%" trend="-2%" icon={<Users size={22} />} color="indigo" isPositive={false} />
           </>
         )}
         {isPracticeView && (
           <>
-            <KPICard title="Practice Delivery" value="$4.2M" trend="+6%" icon={<Zap size={22} />} color="blue" />
-            <KPICard title="Delivery Excellence" value="4.8/5" trend="+0.2" icon={<Activity size={22} />} color="emerald" />
-            <KPICard title="SLA Compliance" value="99.4%" trend="+0.1%" icon={<ShieldCheck size={22} />} color="slate" />
-            <KPICard title="Risk Factor" value="Low" trend="Stable" icon={<AlertCircle size={22} />} color="indigo" />
+            <KPICard title="Practice Delivery" value={`$${(totalRevenue / 1_000_000).toFixed(1)}M`} trend={summaryTrend} icon={<Zap size={22} />} color="blue" />
+            <KPICard title="Delivery Excellence" value={`${operatingMargin.toFixed(1)}%`} trend={summaryTrend} icon={<Activity size={22} />} color="emerald" />
+            <KPICard title="Active Projects" value={projectCount.toLocaleString()} trend={summaryTrend} icon={<ShieldCheck size={22} />} color="slate" />
+            <KPICard title="Avg Project Size" value={`$${(avgForecastPerProject / 1_000_000).toFixed(2)}M`} trend={summaryTrend} icon={<AlertCircle size={22} />} color="indigo" />
           </>
         )}
       

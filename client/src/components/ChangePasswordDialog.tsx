@@ -48,7 +48,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open, onClo
 
   const changePasswordMutation = useMutation({
     mutationFn: async (payload: PasswordForm) => {
-      const token = localStorage.getItem('revenue_max_token');
+      const token = localStorage.getItem('token');
       if (!token) throw new Error('Missing auth token');
       await apiClient.post(
         '/auth/change-password',

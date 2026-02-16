@@ -99,6 +99,13 @@ export default async function (server: FastifyInstance) {
         .where(whereClause)
         .then((rows) => rows[0]);
 
+      const projectCount = await server.db.pg
+        .select({ count: sql<number>`count(distinct ${projects.id})` })
+        .from(projects)
+        .leftJoin(revenue, eq(revenue.projectId, projects.id))
+        .where(whereClause)
+        .then((rows) => Number(rows[0]?.count ?? 0));
+
       const headcount = await server.db.pg
         .select({ count: sql<number>`count(*)` })
         .from(employees)
@@ -111,11 +118,17 @@ export default async function (server: FastifyInstance) {
         ? 0
         : Number((((totalRevenue - totalBudget) / totalRevenue) * 100).toFixed(2));
 
+      const avgForecastPerProject = projectCount === 0
+        ? 0
+        : Number((totalForecast / projectCount).toFixed(2));
+
       return {
         totalRevenue,
         operatingMargin,
         totalHeadcount: headcount,
         pipelineValue: totalForecast,
+        projectCount,
+        avgForecastPerProject,
       };
     },
   );

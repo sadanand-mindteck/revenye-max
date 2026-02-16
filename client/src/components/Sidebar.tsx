@@ -17,7 +17,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const token = localStorage.getItem('revenue_max_token');
+      const token = localStorage.getItem('token');
       if (!token) return;
       await apiClient.post(
         '/auth/logout',
@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
       );
     },
     onSettled: () => {
-      localStorage.removeItem('revenue_max_token');
+      localStorage.removeItem('token');
       onLogout();
     },
   });
