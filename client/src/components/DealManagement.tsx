@@ -5,7 +5,14 @@ import {
   Search, Plus, ExternalLink, User, Activity
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import {
+  ColumnDef,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import { apiClient } from '@/api/client';
+import { useSessionYearStore } from '@/store/sessionYear';
 
 type DealSummary = {
   id: number;
@@ -24,21 +31,9 @@ type DealSummary = {
 
 const DealManagement = () => {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
-  const getSessionYears = () => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
-    return [
-      `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
-      `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
-      `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
-      `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
-    ];
-  };
-
-  const sessionYears = useMemo(() => getSessionYears(), []);
-  const [sessionYear, setSessionYear] = useState(sessionYears[2]);
+  const sessionYear = useSessionYearStore((state) => state.sessionYear);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['projects-summary', sessionYear],
@@ -51,6 +46,29 @@ const DealManagement = () => {
   });
 
   const deals = useMemo(() => data ?? [], [data]);
+
+  const columns = useMemo<ColumnDef<DealSummary>[]>(
+    () => [
+      { id: 'expand', header: '', accessorKey: 'id' },
+      { header: 'Project Entity', accessorKey: 'projectName' },
+      { header: 'Region / BDM', accessorKey: 'region' },
+      { header: 'FY Forecast', accessorKey: 'fyForecast' },
+      { header: 'FY Budget', accessorKey: 'fyBudget' },
+      { header: 'FY Variance', accessorKey: 'fyActual' },
+      { header: 'Execution Status', accessorKey: 'status' },
+      { id: 'manage', header: 'Manage', accessorKey: 'id' },
+    ],
+    [],
+  );
+
+  const table = useReactTable({
+    data: deals,
+    columns,
+    state: { pagination },
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
 
   const toggleRow = (id: number) => {
     const newExpanded = new Set(expandedRows);
@@ -77,18 +95,6 @@ const DealManagement = () => {
           <p className="text-slate-500 text-sm font-medium">Tracking {deals.length} major deals across 5 global regions</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FY</label>
-            <select
-              className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 bg-white"
-              value={sessionYear}
-              onChange={(event) => setSessionYear(event.target.value)}
-            >
-              {sessionYears.map((session) => (
-                <option key={session} value={session}>{session}</option>
-              ))}
-            </select>
-          </div>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
@@ -136,7 +142,8 @@ const DealManagement = () => {
                   </td>
                 </tr>
               )}
-              {!isLoading && !isError && deals.map((deal) => {
+              {!isLoading && !isError && table.getRowModel().rows.map((row) => {
+                const deal = row.original;
                 const isExpanded = expandedRows.has(deal.id);
                 return (
                   <React.Fragment key={deal.id}>
@@ -239,10 +246,24 @@ const DealManagement = () => {
           </table>
         </div>
         <div className="px-8 py-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Showing {deals.length} Priority Project Streams</p>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+            Showing {table.getRowModel().rows.length} of {deals.length} Priority Project Streams
+          </p>
           <div className="flex gap-2">
-            <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400 cursor-not-allowed">Previous</button>
-            <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:bg-blue-50 transition-all shadow-sm">Next</button>
+            <button
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className={`px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest ${table.getCanPreviousPage() ? 'text-blue-600 hover:bg-blue-50' : 'text-slate-400 cursor-not-allowed'} transition-all shadow-sm`}
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className={`px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest ${table.getCanNextPage() ? 'text-blue-600 hover:bg-blue-50' : 'text-slate-400 cursor-not-allowed'} transition-all shadow-sm`}
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>

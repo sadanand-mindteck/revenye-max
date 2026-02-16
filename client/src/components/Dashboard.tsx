@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { 
   Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, Radar
@@ -11,6 +11,7 @@ import {
 import { User, UserRole } from '../types';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
+import { useSessionYearStore } from '@/store/sessionYear';
 
 // Specialized Data for different roles
 
@@ -46,20 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const isBDMView = user.role === UserRole.BDM;
   const isPracticeView = user.role === UserRole.PRACTICE_HEAD;
 
-  const getSessionYears = () => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
-    return [
-      `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
-      `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
-      `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
-      `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
-    ];
-  };
-
-  const sessionYears = useMemo(() => getSessionYears(), []);
-  const [sessionYear, setSessionYear] = useState(sessionYears[2]);
+  const sessionYear = useSessionYearStore((state) => state.sessionYear);
 
   const { data: trendData, isLoading, isError } = useQuery({
     queryKey: ['dashboard-trends', sessionYear],
@@ -183,18 +171,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               {isError && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-2">Failed to load trends</p>}
             </div>
             <div className="flex gap-2 items-center">
-               <div className="flex items-center gap-2">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FY</label>
-                 <select
-                   className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 bg-white"
-                   value={sessionYear}
-                   onChange={(event) => setSessionYear(event.target.value)}
-                 >
-                   {sessionYears.map((session) => (
-                     <option key={session} value={session}>{session}</option>
-                   ))}
-                 </select>
-               </div>
                <button className="p-2 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-200"><Filter size={18} /></button>
                <button className="p-2 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-200"><Search size={18} /></button>
             </div>

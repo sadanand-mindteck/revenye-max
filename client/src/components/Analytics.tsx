@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   Legend, ComposedChart, Line, Area
@@ -7,22 +7,10 @@ import {
 import { TrendingUp, Filter, Download } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
+import { useSessionYearStore } from '@/store/sessionYear';
 
 const Analytics = () => {
-  const getSessionYears = () => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
-    return [
-      `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
-      `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
-      `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
-      `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
-    ];
-  };
-
-  const sessionYears = useMemo(() => getSessionYears(), []);
-  const [sessionYear, setSessionYear] = useState(sessionYears[2]);
+  const sessionYear = useSessionYearStore((state) => state.sessionYear);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['analytics-summary', sessionYear],
@@ -47,18 +35,6 @@ const Analytics = () => {
           {isError && <p className="text-xs font-bold text-red-500 mt-2">Failed to load analytics.</p>}
         </div>
         <div className="flex gap-3 items-center">
-          <div className="flex items-center gap-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FY</label>
-            <select
-              className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 bg-white"
-              value={sessionYear}
-              onChange={(event) => setSessionYear(event.target.value)}
-            >
-              {sessionYears.map((session) => (
-                <option key={session} value={session}>{session}</option>
-              ))}
-            </select>
-          </div>
           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-sm transition-all">
             <Filter size={16} /> Filters
           </button>

@@ -17,7 +17,6 @@ import { Lock } from 'lucide-react';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [fiscalYear, setFiscalYear] = useState('FY 2024-25');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const location = useLocation();
@@ -128,8 +127,6 @@ const App: React.FC = () => {
                 <Sidebar user={user} onLogout={handleLogout} />
                 <div className="flex-1 flex flex-col min-w-0 h-screen">
                   <Header
-                    fiscalYear={fiscalYear}
-                    setFiscalYear={setFiscalYear}
                     activeTabLabel={activeTabLabel}
                     user={user}
                     onOpenProfile={() => navigate('/profile')}

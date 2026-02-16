@@ -4,6 +4,7 @@ import { Save, Calculator, TrendingUp, PieChart, ShieldCheck, Search, Upload, Fi
 import { User, UserRole } from '@/types';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
+import { useSessionYearStore } from '@/store/sessionYear';
 
 interface DealEntryProps {
   user: User;
@@ -16,20 +17,7 @@ const DealEntry: React.FC<DealEntryProps> = ({ user }) => {
   
   const isEditor = user.role === UserRole.BDM || user.role === UserRole.PRACTICE_HEAD || user.role === UserRole.ADMIN;
 
-  const getSessionYears = () => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const baseYear = now.getMonth() < 3 ? currentYear - 1 : currentYear;
-    return [
-      `${baseYear - 2}-${(baseYear - 1).toString().slice(-2)}`,
-      `${baseYear - 1}-${baseYear.toString().slice(-2)}`,
-      `${baseYear}-${(baseYear + 1).toString().slice(-2)}`,
-      `${baseYear + 1}-${(baseYear + 2).toString().slice(-2)}`,
-    ];
-  };
-
-  const sessionYears = useMemo(() => getSessionYears(), []);
-  const [sessionYear, setSessionYear] = useState(sessionYears[2]);
+  const sessionYear = useSessionYearStore((state) => state.sessionYear);
 
   const { data: projectOptions } = useQuery({
     queryKey: ['entry-options'],
@@ -169,18 +157,6 @@ const DealEntry: React.FC<DealEntryProps> = ({ user }) => {
       {/* Selection & Actions Bar */}
       <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3 w-full xl:w-auto">
-          <div className="flex items-center gap-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FY</label>
-            <select
-              className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 bg-white"
-              value={sessionYear}
-              onChange={(event) => setSessionYear(event.target.value)}
-            >
-              {sessionYears.map((session) => (
-                <option key={session} value={session}>{session}</option>
-              ))}
-            </select>
-          </div>
           <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-500/20 shrink-0">
             <FileText size={20} />
           </div>
