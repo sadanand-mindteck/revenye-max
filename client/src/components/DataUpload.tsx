@@ -1,5 +1,5 @@
-
 import React, { useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { 
   FileUp, Database, FileSpreadsheet, Download, 
   CheckCircle2, AlertCircle, Loader2, Info, ArrowRight,
@@ -30,6 +30,13 @@ const getSessionYears = () => {
   ];
 };
 
+const DEFAULT_HEADERS = [
+  "MS/PS", "Entity", "GR Entity", "ROW/US", "Resource ID", "Resource Name", "Deal Type", "EEENNN", "Bill Rate", "Start Date", "End Date",
+  "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar","FY",
+  "Customer Name", "Project Name", "Practice Head", "BDM", "GeoHead", "Vertical", "Horizontal"
+];
+
+
 const DataUpload: React.FC = () => {
   const [states, setStates] = useState<Record<string, FileState>>({
     master: { file: null, status: 'idle', progress: 0, message: '' },
@@ -39,19 +46,70 @@ const DataUpload: React.FC = () => {
   const sessionYears = getSessionYears();
   const [selectedSession, setSelectedSession] = useState(sessionYears[2]);
 
+  const [pendingUpload, setPendingUpload] = useState<{type: string, file: File} | null>(null);
+  const [cols, setCols] = useState([] as string[]);
+
+
   const handleFileSelect = async (type: string, file: File) => {
+    // Read headers from Excel file
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target!.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const range = sheet['!ref']; // e.g., "A1:AH100"
+      if (range) {
+        const [start, end] = range.split(':'); // start = "A1", end = "AH100"
+        const headerStart = start.replace(/[0-9]/g, ''); // "A"
+        const headerEnd = end.replace(/[0-9]/g, ''); // "AH"
+        const headerRow = start.match(/[0-9]+/)[0];
+        const headerRange = `${headerStart}${headerRow}:${headerEnd}${headerRow}`;
+        // Get all column names between headerStart and headerEnd
+        function colToNum(col) {
+          let num = 0;
+          for (let i = 0; i < col.length; i++) {
+            num = num * 26 + (col.charCodeAt(i) - 64);
+          }
+          return num;
+        }
+        function numToCol(num) {
+          let col = '';
+          while (num > 0) {
+            let rem = (num - 1) % 26;
+            col = String.fromCharCode(65 + rem) + col;
+            num = Math.floor((num - 1) / 26);
+          }
+          return col;
+        }
+        const startNum = colToNum(headerStart);
+        const endNum = colToNum(headerEnd);
+        const allCols = [];
+        for (let n = startNum; n <= endNum; n++) {
+          allCols.push(numToCol(n));
+        }
+        setCols(allCols);
+        setPendingUpload({ type, file });
+        console.log('Header Range:', headerRange,  'All Cols:', allCols);
+      }
+      
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const uploadFile = async (type: string, file: File) => {
     setStates(prev => ({
       ...prev,
       [type]: { file, status: 'uploading', progress: 0, message: 'Transferring to secure buffer...' }
     }));
 
-
     const formData = new FormData();
     formData.append('file', file);
     formData.append('session', selectedSession);
+    formData.append('mappedHeaders', JSON.stringify(Object.assign({},...DEFAULT_HEADERS.map((headerField, i) => ({[headerField]: cols[i]})))));
+    
 
     try {
-     await apiClient.post('/data/upload-excel', formData, {
+      await apiClient.post('/data/upload-excel', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -75,6 +133,18 @@ const DataUpload: React.FC = () => {
     }
   };
 
+  const confirmHeaderMapping = () => {
+   
+      uploadFile(pendingUpload.type, pendingUpload.file);
+      setPendingUpload(null);
+   
+  };
+  const cancelHeaderMapping = () => {
+    setPendingUpload(null);
+    setCols([]);
+  };
+  
+
   const cancelUpload = (type: string) => {
     setStates(prev => ({
       ...prev,
@@ -84,6 +154,48 @@ const DataUpload: React.FC = () => {
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+      {cols.length > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-4 md:p-8 shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <h2 className="text-xl font-black mb-4">Header Mismatch Detected</h2>
+            <p className="mb-2 text-sm text-slate-700">Align the uploaded Excel headers with the required format. You can edit the mapping below:</p>
+            <div className="mb-4 flex-1 overflow-auto">
+              <table className="min-w-full border text-xs">
+                <thead>
+                  <tr>
+                    <th className="border px-2 py-1 bg-slate-100">Column</th>
+                    <th className="border px-2 py-1 bg-slate-100">Actual Header</th>
+                    <th className="border px-2 py-1 bg-slate-100">Mapped Header (Editable)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DEFAULT_HEADERS.map((actualHeader, i) => (
+                    <tr key={i}>
+                      <td className="border px-2 py-1 text-center">{i + 1}</td>
+                      <td className="border px-2 py-1 text-red-700">{actualHeader}</td>
+                      <td className="border px-2 py-1">
+                        <input
+                          className="border rounded px-1 py-0.5 w-40"
+                          value={cols[i] || ''}
+                          onChange={e => {
+                            const newMap = [...cols];
+                            newMap[i] = e.target.value;
+                            setCols(newMap);
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex gap-4 mt-6">
+              <button className="px-6 py-2 bg-blue-600 text-white rounded font-bold" onClick={confirmHeaderMapping}>Save & Upload</button>
+              <button className="px-6 py-2 bg-slate-200 text-slate-700 rounded font-bold" onClick={cancelHeaderMapping}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Session Selector */}
       <div className="flex items-center gap-4 mb-4">
         <label htmlFor="session-select" className="font-bold text-slate-700 text-sm">Session Year:</label>

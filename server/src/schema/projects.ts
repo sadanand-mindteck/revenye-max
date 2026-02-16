@@ -18,18 +18,18 @@ import { businessTypes } from "./businessTypes";
 
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  name: text("name"),
   classification: text("classification").notNull(), // RoW or US
   projectType: text("project_type").notNull(), // PS or MS
   projectCustomerType: text("project_customer_type").notNull(), // EE, EN, NN
 
-  regionId: integer("region_id").notNull().references(() => regions.id), 
-  entityId: integer("entity_id").notNull().references(() => entities.id),
+  regionId: integer("region_id").references(() => regions.id), 
+  entityId: integer("entity_id").references(() => entities.id),
   entityGrId: integer("entity_gr_id").notNull().references(() => entitiesGr.id),
   dealTypeId: integer("deal_type_id").notNull().references(() => dealTypes.id), 
-  verticalId: integer("vertical_id").notNull().references(() => verticals.id),
-  horizontalId: integer("horizontal_id").notNull().references(() => horizontals.id),
-  businessTypeId: integer("business_type_id").notNull().references(() => businessTypes.id),
+  verticalId: integer("vertical_id").references(() => verticals.id),
+  horizontalId: integer("horizontal_id").references(() => horizontals.id),
+  businessTypeId: integer("business_type_id").references(() => businessTypes.id),
   resourceId: integer("resource_id").references(() => resources.id),
   customerId: integer("customer_id").notNull().references(() => customers.id),
   practiceHeadId: integer("practice_head_id").references(() => employees.id),
@@ -47,17 +47,17 @@ export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
 
 export const ProjectCreateZ = z.object({
-  name: z.string().min(1),
+  name: z.string().optional(),
   dealTypeId: z.number().int(),
   customerId: z.number().int(),
   resourceId: z.number().int().optional(),
-  regionId: z.number().int(),
-  entityId: z.number().int(),
+  regionId: z.number().int().optional(),
+  entityId: z.number().int().optional(),
   entityGrId: z.number().int(),
   classification: z.enum(["RoW", "US"]),
-  verticalId: z.number().int(),
-  horizontalId: z.number().int(),
-  businessTypeId: z.number().int(),
+  verticalId: z.number().int().optional(),
+  horizontalId: z.number().int().optional(),
+  businessTypeId: z.number().int().optional(),
   projectType: z.enum(["PS", "MS"]),
   projectCustomerType: z.enum(["EE", "EN" , "NN"]),
 
@@ -66,7 +66,7 @@ export const ProjectCreateZ = z.object({
   geoHeadId: z.number().int().optional(),
   buHeadId: z.number().int().optional(),
 
-  startDate: z.string(),
+  startDate: z.string().optional(),
   endDate: z.string().optional(),
   remarks: z.string().optional(),
 });

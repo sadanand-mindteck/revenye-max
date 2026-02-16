@@ -242,6 +242,7 @@ async function run() {
     { name: "AI / ML" },
     { name: "Support" },
   ]);
+  
   console.log("Inserted horizontals");
 
   //9. Add Employees
