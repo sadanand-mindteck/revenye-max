@@ -154,155 +154,7 @@ export function createExcelUploadRoute(server: FastifyInstance) {
       const vertical = getCellValue(row, mappedHeaders["Vertical"]);
       const horizontal = getCellValue(row, mappedHeaders["Horizontal"]);
      
-      // if (msPs === "MS") {
-      //   await (async () => {
-      //       const baseCustomerName = normalizeName(customerName);
-      //       if (!baseCustomerName) return;
-
-      //       let customerId: number | null = null;
-            
-      //         const existingCustomer = await server.db.pg
-      //           .select({ id: customers.id })
-      //           .from(customers)
-      //           .where(eq(customers.name, baseCustomerName))
-      //           .then((rows) => rows[0]);
-      //         customerId = existingCustomer?.id ?? null;
-            
-
-      //       if (!customerId) {
-      //         const customerNameToSave = hasNewKeyword(baseCustomerName)
-      //           ? `${baseCustomerName}-${randomSuffix()}`
-      //           : baseCustomerName;
-      //         const inserted = await server.db.pg
-      //           .insert(customers)
-      //           .values({ name: customerNameToSave })
-      //           .returning({ id: customers.id });
-      //         customerId = inserted[0]?.id ?? null;
-      //       }
-
-      //       if (!customerId) return;
-      //       let resourceDbId = null;
-
-      //       // const resourceCode = normalizeName(resourceId);
-      //       // if (!resourceCode) return;
-
-      //       // const existingResource = await server.db.pg
-      //       //   .select({ id: resources.id })
-      //       //   .from(resources)
-      //       //   .where(eq(resources.employeeId, resourceCode))
-      //       //   .then((rows) => rows[0]);
-
-      //       //  resourceDbId = existingResource?.id ?? null;
-      //       // if (!resourceDbId) {
-      //       //   const resourceInserted = await server.db.pg
-      //       //     .insert(resources)
-      //       //     .values({
-      //       //       name: normalizeName(resourceName) || resourceCode,
-      //       //       employeeId: resourceCode,
-      //       //       billRate: toNumber(billRate) ?? 0,
-      //       //     })
-      //       //     .returning({ id: resources.id });
-      //       //   resourceDbId = resourceInserted[0]?.id ?? null;
-      //       // }
-      //       // if (!resourceDbId) return;
-
-
-      //       const entityIdRow = normalizeName(entity)
-      //         ? await server.db.pg
-      //             .select({ id: entities.id })
-      //             .from(entities)
-      //             .where(eq(entities.name, normalizeName(entity)))
-      //             .then((rows) => rows[0])
-      //         : null;
-
-      //       const entityGrRow = await server.db.pg
-      //         .select({ id: entitiesGr.id })
-      //         .from(entitiesGr)
-      //         .where(eq(entitiesGr.name, normalizeName(grEntity)))
-      //         .then((rows) => rows[0]);
-
-      //       if (!entityGrRow?.id) return;
-
-      //       const dealTypeRow = await server.db.pg
-      //         .select({ id: dealTypes.id })
-      //         .from(dealTypes)
-      //         .where(eq(dealTypes.name, normalizeName(dealType)))
-      //         .then((rows) => rows[0]);
-
-      //       if (!dealTypeRow?.id) return;
-
-      //       const practiceHeadId = await resolveEmployeeId(practiceHead);
-      //       const bdmId = isTbh(bdm) ? null : await resolveEmployeeId(bdm);
-      //       const geoHeadId = isTbh(geoHead) ? null : await resolveEmployeeId(geoHead);
-
-      //       const verticalId = isTbh(vertical) ? null : await resolveVerticalId(vertical);
-      //       const horizontalId = isTbh(horizontal) ? null : await resolveHorizontalId(horizontal);
-
-      //       const classification = normalizeName(rowUs).toUpperCase() === "US" ? "US" : "RoW";
-      //       const projectType = normalizeName(msPs).toUpperCase() === "PS" ? "PS" : "MS";
-      //       const projectCustomerType = normalizeName(eeEnNn).toUpperCase() as "EE" | "EN" | "NN";
-      //       if (!projectCustomerType || !["EE", "EN", "NN"].includes(projectCustomerType)) return;
-
-      //       const projectInserted = await server.db.pg
-      //         .insert(projects)
-      //         .values({
-      //           name: normalizeName(projectName),
-      //           classification,
-      //           projectType,
-      //           projectCustomerType,
-      //           entityId: entityIdRow?.id ?? null,
-      //           entityGrId: entityGrRow.id,
-      //           dealTypeId: dealTypeRow.id,
-      //           verticalId,
-      //           horizontalId,
-      //           resourceId: resourceDbId ?? null,
-      //           customerId,
-      //           practiceHeadId,
-      //           bdmId,
-      //           geoHeadId,
-      //           startDate: normalizeName(startDate) || null,
-      //           endDate: normalizeName(endDate) || null,
-      //         })
-      //         .returning({ id: projects.id });
-
-      //       const projectId = projectInserted[0]?.id ?? null;
-      //       if (!projectId || !session) return;
-
-      //       const monthData = [
-      //         { month: 1, value: apr },
-      //         { month: 2, value: may },
-      //         { month: 3, value: jun },
-      //         { month: 4, value: jul },
-      //         { month: 5, value: aug },
-      //         { month: 6, value: sep },
-      //         { month: 7, value: oct },
-      //         { month: 8, value: nov },
-      //         { month: 9, value: dec },
-      //         { month: 10, value: jan },
-      //         { month: 11, value: feb },
-      //         { month: 12, value: mar },
-      //       ];
-
-      //       const revenueRows = monthData
-      //         .map(({ month, value }) => ({ month, amount: toNumber(value) }))
-      //         .filter((entry) => entry.amount !== null);
-
-      //       if (revenueRows.length > 0) {
-      //         await server.db.pg.insert(revenue).values(
-      //           revenueRows.map((entry) => ({
-      //             projectId,
-      //             financialYear: session,
-      //             financialMonth: entry.month,
-      //             forecast: entry.amount ?? 0,
-      //           })),
-      //         );
-      //       }
-      //     })();
-      //     log(`Processed row ${rowNumber} for MS project: ${toText(projectName)}`);
-      // }
-
-
- if (msPs === "PS") {
+      if (msPs === "MS") {
         await (async () => {
             const baseCustomerName = normalizeName(customerName);
             if (!baseCustomerName) return;
@@ -329,31 +181,6 @@ export function createExcelUploadRoute(server: FastifyInstance) {
             }
 
             if (!customerId) return;
-            let resourceDbId = null;
-
-            const resourceCode = normalizeName(resourceId);
-            if (!resourceCode) return;
-
-            const existingResource = await server.db.pg
-              .select({ id: resources.id })
-              .from(resources)
-              .where(eq(resources.employeeId, resourceCode))
-              .then((rows) => rows[0]);
-
-             resourceDbId = existingResource?.id ?? null;
-            if (!resourceDbId) {
-              const resourceInserted = await server.db.pg
-                .insert(resources)
-                .values({
-                  name: normalizeName(resourceName) || resourceCode,
-                  employeeId: resourceCode,
-                  billRate: toNumber(billRate) ?? 0,
-                })
-                .returning({ id: resources.id });
-              resourceDbId = resourceInserted[0]?.id ?? null;
-            }
-            if (!resourceDbId) return;
-
 
             const entityIdRow = normalizeName(entity)
               ? await server.db.pg
@@ -391,7 +218,7 @@ export function createExcelUploadRoute(server: FastifyInstance) {
             const projectCustomerType = normalizeName(eeEnNn).toUpperCase() as "EE" | "EN" | "NN";
             if (!projectCustomerType || !["EE", "EN", "NN"].includes(projectCustomerType)) return;
 
-              await server.db.pg
+            const projectInserted = await server.db.pg
               .insert(projects)
               .values({
                 name: normalizeName(projectName),
@@ -403,21 +230,219 @@ export function createExcelUploadRoute(server: FastifyInstance) {
                 dealTypeId: dealTypeRow.id,
                 verticalId,
                 horizontalId,
-                resourceId: resourceDbId ?? null,
                 customerId,
                 practiceHeadId,
                 bdmId,
                 geoHeadId,
                 startDate: normalizeName(startDate) || null,
                 endDate: normalizeName(endDate) || null,
-              });
+              })
+              .returning({ id: projects.id });
 
-            
+            const projectId = projectInserted[0]?.id ?? null;
+            if (!projectId || !session) return;
 
-            
+            const monthData = [
+              { month: 1, value: apr },
+              { month: 2, value: may },
+              { month: 3, value: jun },
+              { month: 4, value: jul },
+              { month: 5, value: aug },
+              { month: 6, value: sep },
+              { month: 7, value: oct },
+              { month: 8, value: nov },
+              { month: 9, value: dec },
+              { month: 10, value: jan },
+              { month: 11, value: feb },
+              { month: 12, value: mar },
+            ];
+
+            const revenueRows = monthData
+              .map(({ month, value }) => ({ month, amount: toNumber(value) }))
+              .filter((entry) => entry.amount !== null);
+
+            if (revenueRows.length > 0) {
+              await server.db.pg.insert(revenue).values(
+                revenueRows.map((entry) => ({
+                  projectId,
+                  financialYear: session,
+                  financialMonth: entry.month,
+                  forecast: entry.amount ?? 0,
+                })),
+              );
+            }
           })();
-          log(`Processed row ${rowNumber} for PS project: ${toText(projectName)}`);
+          log(`Processed row ${rowNumber} for MS project: ${toText(projectName)}`);
       }
+
+
+      if (msPs === "PS") {
+        const baseCustomerName = normalizeName(customerName);
+        if (!baseCustomerName) return;
+
+        let customerId: number | null = null;
+
+        const existingCustomer = await server.db.pg
+          .select({ id: customers.id })
+          .from(customers)
+          .where(eq(customers.name, baseCustomerName))
+          .then((rows) => rows[0]);
+        customerId = existingCustomer?.id ?? null;
+
+        if (!customerId) {
+          const customerNameToSave = hasNewKeyword(baseCustomerName)
+            ? `${baseCustomerName}-${randomSuffix()}`
+            : baseCustomerName;
+          const inserted = await server.db.pg
+            .insert(customers)
+            .values({ name: customerNameToSave })
+            .returning({ id: customers.id });
+          customerId = inserted[0]?.id ?? null;
+        }
+
+        if (!customerId) return;
+
+        const entityIdRow = normalizeName(entity)
+          ? await server.db.pg
+              .select({ id: entities.id })
+              .from(entities)
+              .where(eq(entities.name, normalizeName(entity)))
+              .then((rows) => rows[0])
+          : null;
+
+        const entityGrRow = await server.db.pg
+          .select({ id: entitiesGr.id })
+          .from(entitiesGr)
+          .where(eq(entitiesGr.name, normalizeName(grEntity)))
+          .then((rows) => rows[0]);
+
+        if (!entityGrRow?.id) return;
+
+        const dealTypeRow = await server.db.pg
+          .select({ id: dealTypes.id })
+          .from(dealTypes)
+          .where(eq(dealTypes.name, normalizeName(dealType)))
+          .then((rows) => rows[0]);
+
+        if (!dealTypeRow?.id) return;
+
+        const practiceHeadId = await resolveEmployeeId(practiceHead);
+        const bdmId = isTbh(bdm) ? null : await resolveEmployeeId(bdm);
+        const geoHeadId = isTbh(geoHead) ? null : await resolveEmployeeId(geoHead);
+
+        const verticalId = isTbh(vertical) ? null : await resolveVerticalId(vertical);
+        const horizontalId = isTbh(horizontal) ? null : await resolveHorizontalId(horizontal);
+
+        const classification = normalizeName(rowUs).toUpperCase() === "US" ? "US" : "RoW";
+        const projectType = normalizeName(msPs).toUpperCase() === "PS" ? "PS" : "MS";
+        const projectCustomerType = normalizeName(eeEnNn).toUpperCase() as "EE" | "EN" | "NN";
+        if (!projectCustomerType || !["EE", "EN", "NN"].includes(projectCustomerType)) return;
+
+        const baseProjectName = normalizeName(projectName);
+        if (!baseProjectName) return;
+
+        let projectId: number | null = null;
+        if (!hasNewKeyword(baseProjectName)) {
+          const existingProject = await server.db.pg
+            .select({ id: projects.id })
+            .from(projects)
+            .where(eq(projects.name, baseProjectName))
+            .then((rows) => rows[0]);
+          projectId = existingProject?.id ?? null;
+        }
+
+        if (!projectId) {
+          const projectNameToSave = hasNewKeyword(baseProjectName)
+            ? `${baseProjectName}-${randomSuffix()}`
+            : baseProjectName;
+          const insertedProject = await server.db.pg
+            .insert(projects)
+            .values({
+              name: projectNameToSave,
+              classification,
+              projectType,
+              projectCustomerType,
+              entityId: entityIdRow?.id ?? null,
+              entityGrId: entityGrRow.id,
+              dealTypeId: dealTypeRow.id,
+              verticalId,
+              horizontalId,
+              customerId,
+              practiceHeadId,
+              bdmId,
+              geoHeadId,
+              startDate: normalizeName(startDate) || null,
+              endDate: normalizeName(endDate) || null,
+            })
+            .returning({ id: projects.id });
+          projectId = insertedProject[0]?.id ?? null;
+        }
+
+        if (!projectId) return;
+
+        const resourceCodeRaw = normalizeName(resourceId);
+        const resourceNameRaw = normalizeName(resourceName);
+        const resourceCode = !resourceCodeRaw
+          ? `RES-${randomSuffix()}`
+          : hasNewKeyword(resourceCodeRaw)
+            ? `${resourceCodeRaw}-${randomSuffix()}`
+            : resourceCodeRaw;
+        const resourceNameFinal = hasNewKeyword(resourceNameRaw)
+          ? `${resourceNameRaw}-${randomSuffix()}`
+          : resourceNameRaw || resourceCode;
+
+        let resourceDbId: number | null = null;
+
+        if (resourceNameFinal) {
+          const existingByName = await server.db.pg
+            .select({ id: resources.id, projectId: resources.projectId })
+            .from(resources)
+            .where(eq(resources.name, resourceNameFinal))
+            .then((rows) => rows[0]);
+          resourceDbId = existingByName?.id ?? null;
+          if (resourceDbId && existingByName?.projectId !== projectId) {
+            await server.db.pg
+              .update(resources)
+              .set({ projectId })
+              .where(eq(resources.id, resourceDbId));
+          }
+        }
+
+        if (!resourceDbId) {
+          const existingByCode = await server.db.pg
+            .select({ id: resources.id, projectId: resources.projectId })
+            .from(resources)
+            .where(eq(resources.employeeId, resourceCode))
+            .then((rows) => rows[0]);
+          resourceDbId = existingByCode?.id ?? null;
+          if (resourceDbId && existingByCode?.projectId !== projectId) {
+            await server.db.pg
+              .update(resources)
+              .set({ projectId })
+              .where(eq(resources.id, resourceDbId));
+          }
+        }
+
+        if (!resourceDbId) {
+          const resourceInserted = await server.db.pg
+            .insert(resources)
+            .values({
+              name: resourceNameFinal,
+              employeeId: resourceCode,
+              billRate: toNumber(billRate) ?? 0,
+              projectId,
+            })
+            .returning({ id: resources.id });
+          resourceDbId = resourceInserted[0]?.id ?? null;
+        }
+
+        if (!resourceDbId) return;
+
+        log(`Processed row ${rowNumber} for PS project: ${toText(projectName)}`);
+      }
+
+
+
 
     }
 
